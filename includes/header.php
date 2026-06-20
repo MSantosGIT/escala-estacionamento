@@ -21,7 +21,7 @@ function navItem($href, $icone, $rotulo, $pg) {
 <meta name="apple-mobile-web-app-title" content="Apoio Externo">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="icon" href="assets/icons/favicon.png" type="image/png">
-<link rel="stylesheet" href="assets/css/style.css?v=4">
+<link rel="stylesheet" href="assets/css/style.css?v=5">
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -150,3 +150,24 @@ document.addEventListener('click', (ev) => {
 <?php if ($f = flash()): ?>
   <div class="flash <?= e($f['tipo']) ?>"><?= e($f['msg']) ?></div>
 <?php endif; ?>
+
+<script>
+// Toggle global dos cards recolhíveis (usado nas telas de cadastro)
+document.addEventListener('click', (ev) => {
+  const btn = ev.target.closest('.btn-toggle');
+  if (!btn) return;
+  const alvo = document.getElementById(btn.dataset.alvo);
+  if (!alvo) return;
+  const jaAberto = alvo.classList.contains('aberto');
+  // fecha todos os cards e desativa todos os botões do mesmo grupo
+  const grupo = btn.closest('.acoes-topo');
+  if (grupo) {
+    grupo.querySelectorAll('.btn-toggle').forEach(b => b.classList.remove('ativo'));
+    grupo.parentElement.querySelectorAll('.card-recolhivel').forEach(c => c.classList.remove('aberto'));
+  }
+  if (!jaAberto) {
+    alvo.classList.add('aberto');
+    btn.classList.add('ativo');
+  }
+});
+</script>

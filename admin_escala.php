@@ -76,7 +76,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['op'] ?? '') === 'salvar_lo
     }
 
     if ($erros) flash('Erro ao salvar: ' . implode('; ', $erros), 'erro');
-    else flash($aplicadas . ' alteração(ões) aplicada(s) e colaboradores notificados.');
+    else {
+        flash($aplicadas . ' alteração(ões) aplicada(s) e colaboradores notificados.');
+        // notifica os admins sobre as alterações feitas (aparece no painel inicial)
+        if ($aplicadas > 0) {
+            $u = usuario();
+            $nomeAdmin = $u['nome'] ?? 'Administrador';
+            notificarAdmin($pdo, "{$aplicadas} alteração(ões) na escala feitas por {$nomeAdmin}.");
+        }
+    }
     redirect("admin_escala.php?mes=$mes&ano=$ano");
 }
 

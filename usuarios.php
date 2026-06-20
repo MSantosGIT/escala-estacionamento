@@ -42,7 +42,11 @@ require __DIR__ . '/includes/header.php';
 <h1 class="page-title">Usuários do sistema</h1>
 <p class="page-sub">Administradores e colaboradores com acesso.</p>
 
-<div class="card">
+<div class="acoes-topo">
+  <button type="button" class="btn-toggle" data-alvo="card-novo-usr">➕ Novo usuário</button>
+</div>
+
+<div id="card-novo-usr" class="card card-recolhivel">
   <h2>Novo usuário</h2>
   <form method="post">
     <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">

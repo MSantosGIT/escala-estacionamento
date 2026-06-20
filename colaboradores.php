@@ -57,7 +57,13 @@ require __DIR__ . '/includes/header.php';
 <h1 class="page-title">Colaboradores</h1>
 <p class="page-sub">Cadastro da equipe de apoio ao estacionamento.</p>
 
-<div class="card">
+<div class="acoes-topo">
+  <button type="button" class="btn-toggle <?= $editar?'ativo':'' ?>" data-alvo="card-novo-colab">
+    ➕ <?= $editar ? 'Editar colaborador' : 'Novo colaborador' ?>
+  </button>
+</div>
+
+<div id="card-novo-colab" class="card card-recolhivel <?= $editar?'aberto':'' ?>">
   <h2><?= $editar ? 'Editar colaborador' : 'Novo colaborador' ?></h2>
   <form method="post">
     <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">

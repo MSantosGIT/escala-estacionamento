@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/escala_engine.php';
+require_once __DIR__ . '/includes/trocas.php';
 exigirAdmin();
 $pdo = db();
 
@@ -53,6 +54,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['op'] ?? '') === 'regerar')
     $msg = "Escala regerada: {$res['completas']} completo(s)";
     if ($res['parciais'] > 0) $msg .= ", {$res['parciais']} parcial(is)";
     flash($msg . '.', $res['parciais'] ? 'erro' : 'sucesso');
+    // notifica admins
+    $meses = [1=>'janeiro',2=>'fevereiro',3=>'março',4=>'abril',5=>'maio',6=>'junho',
+              7=>'julho',8=>'agosto',9=>'setembro',10=>'outubro',11=>'novembro',12=>'dezembro'];
+    $nomeAdmin = usuario()['nome'] ?? 'Administrador';
+    notificarAdmin($pdo, "Escala de {$meses[$mes]}/{$ano} regerada por {$nomeAdmin}.");
     redirect("admin_indisponibilidade.php?colaborador=$colabId&mes=$mes&ano=$ano");
 }
 

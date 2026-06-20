@@ -118,7 +118,13 @@ require __DIR__ . '/includes/header.php';
 </div>
 <?php endif; ?>
 
-<div class="card">
+<div class="acoes-topo">
+  <button type="button" class="btn-toggle <?= $editar?'ativo':'' ?>" data-alvo="card-novo-veic">
+    ➕ <?= $editar ? 'Editar veículo' : 'Novo veículo' ?>
+  </button>
+</div>
+
+<div id="card-novo-veic" class="card card-recolhivel <?= $editar?'aberto':'' ?>">
   <h2><?= $editar ? 'Editar veículo' : 'Novo veículo' ?></h2>
   <form method="post" enctype="multipart/form-data">
     <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
