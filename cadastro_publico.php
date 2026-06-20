@@ -108,12 +108,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cadastro de Veículo · Apoio Externo</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#e8843f">
-<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-<link rel="icon" href="assets/icons/favicon.png" type="image/png">
-<link rel="stylesheet" href="assets/css/style.css?v=3">
+<title>Cadastro de Veículo · Estacionamento</title>
+<link rel="stylesheet" href="assets/css/style.css?v=2">
 </head>
 <body>
 <div class="login-wrap" style="align-items:flex-start;padding-top:3rem">

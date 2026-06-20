@@ -147,16 +147,3 @@ tr:hover td{background:var(--laranja-1)}
 .right{text-align:right}
 .flex-between{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
 .foto-mini{width:46px;height:46px;border-radius:10px;object-fit:cover;border:1px solid var(--borda)}
-
-/* ---------- Rodapé do desenvolvedor ---------- */
-.rodape-dev{
-  margin-top:2.5rem;
-  padding:1.1rem 1rem;
-  border-top:1px solid var(--borda);
-  text-align:center;
-  font-size:.85rem;
-  color:var(--texto-suave);
-}
-.rodape-dev strong{color:var(--laranja-6)}
-.rodape-dev a{color:var(--laranja-6);text-decoration:none;font-weight:600;white-space:nowrap}
-.rodape-dev a:hover{text-decoration:underline}

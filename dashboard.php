@@ -104,13 +104,14 @@ require __DIR__ . '/includes/header.php';
     <a href="escalas.php" class="btn sm">Ver todas as escalas</a>
   </div>
   <table>
-    <thead><tr><th>Data</th><th>Evento</th><th>Chegada</th><th>Status</th></tr></thead>
+    <thead><tr><th>Data</th><th>Evento</th><th>Chegada</th><th>Vagas</th><th>Status</th></tr></thead>
     <tbody>
     <?php foreach ($proximas as $p): ?>
       <tr>
         <td><?= date('d/m/Y', strtotime($p['data_evento'])) ?></td>
         <td><?= e($p['evento']) ?></td>
         <td><?= substr($p['horario_chegada'],0,5) ?></td>
+        <td><?= $p['num_colaboradores'] ?><?= $p['exige_lider']?' · exige A1':'' ?></td>
         <td><span class="badge <?= $p['status']==='preenchida'?'ok':'warn' ?>"><?= ucfirst($p['status']) ?></span></td>
       </tr>
     <?php endforeach; ?>

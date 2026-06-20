@@ -7,9 +7,18 @@ $pdo = db();
 $mes = (int)($_GET['mes'] ?? date('n'));
 $ano = (int)($_GET['ano'] ?? date('Y'));
 
+// helpers
 function colabNivel(PDO $pdo, int $id): string {
     $s = $pdo->prepare("SELECT nivel FROM colaboradores WHERE id=?");
     $s->execute([$id]); return (string)($s->fetchColumn() ?: 'junior');
+}
+function colabNome(PDO $pdo, int $id): string {
+    $s = $pdo->prepare("SELECT nome FROM colaboradores WHERE id=?");
+    $s->execute([$id]); return (string)($s->fetchColumn() ?: '—');
+}
+function estaIndisponivel(PDO $pdo, int $colabId, int $escalaId): bool {
+    $s = $pdo->prepare("SELECT 1 FROM indisponibilidades WHERE colaborador_id=? AND escala_id=?");
+    $s->execute([$colabId, $escalaId]); return (bool)$s->fetchColumn();
 }
 function nomeEvento(PDO $pdo, int $escalaId): string {
     $s = $pdo->prepare("SELECT CONCAT(evento,' (',DATE_FORMAT(data_evento,'%d/%m/%Y'),')') FROM escalas WHERE id=?");
@@ -17,67 +26,65 @@ function nomeEvento(PDO $pdo, int $escalaId): string {
 }
 
 // ------------------------------------------------------------
-//  SALVAR EM LOTE — recebe JSON com a lista de operações
+//  AÇÕES
 // ------------------------------------------------------------
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['op'] ?? '') === 'salvar_lote') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validarCSRF();
+    $op = $_POST['op'] ?? '';
+    $escalaId = (int)($_POST['escala_id'] ?? 0);
     $mes = (int)$_POST['mes']; $ano = (int)$_POST['ano'];
-    $ops = json_decode($_POST['ops'] ?? '[]', true);
-    if (!is_array($ops)) $ops = [];
 
-    $aplicadas = 0; $erros = [];
-    $pdo->beginTransaction();
-    try {
-        foreach ($ops as $o) {
-            $tipo = $o['tipo'] ?? '';
-            $eid  = (int)($o['escala_id'] ?? 0);
-            if (!$eid) continue;
-
-            if ($tipo === 'remover') {
-                $cid = (int)($o['colaborador_id'] ?? 0);
-                if (!$cid) continue;
-                $pdo->prepare("DELETE FROM escala_colaboradores WHERE escala_id=? AND colaborador_id=?")
-                    ->execute([$eid, $cid]);
-                notificarColaborador($pdo, $cid, "Você foi removido da escala de " . nomeEvento($pdo,$eid) . " pelo administrador.");
-                $aplicadas++;
-            }
-            elseif ($tipo === 'adicionar') {
-                $cid = (int)($o['colaborador_id'] ?? 0);
-                if (!$cid) continue;
-                $nivel = colabNivel($pdo, $cid);
-                $pdo->prepare(
-                    "INSERT INTO escala_colaboradores (escala_id, colaborador_id, nivel_na_escala)
-                     VALUES (?,?,?) ON DUPLICATE KEY UPDATE nivel_na_escala=VALUES(nivel_na_escala)"
-                )->execute([$eid, $cid, $nivel]);
-                notificarColaborador($pdo, $cid, "Você foi escalado para " . nomeEvento($pdo,$eid) . " pelo administrador.");
-                $aplicadas++;
-            }
-            elseif ($tipo === 'substituir') {
-                $sai   = (int)($o['sai_id'] ?? 0);
-                $entra = (int)($o['entra_id'] ?? 0);
-                if (!$sai || !$entra || $sai === $entra) continue;
-                $nivel = colabNivel($pdo, $entra);
-                $pdo->prepare("DELETE FROM escala_colaboradores WHERE escala_id=? AND colaborador_id=?")
-                    ->execute([$eid, $sai]);
-                $pdo->prepare(
-                    "INSERT INTO escala_colaboradores (escala_id, colaborador_id, nivel_na_escala)
-                     VALUES (?,?,?) ON DUPLICATE KEY UPDATE nivel_na_escala=VALUES(nivel_na_escala)"
-                )->execute([$eid, $entra, $nivel]);
-                $ev = nomeEvento($pdo,$eid);
-                notificarColaborador($pdo, $sai,   "Você saiu da escala de $ev (troca feita pelo administrador).");
-                notificarColaborador($pdo, $entra, "Você foi escalado para $ev (troca feita pelo administrador).");
-                $aplicadas++;
-            }
-        }
-        $pdo->commit();
-    } catch (Throwable $ex) {
-        $pdo->rollBack();
-        $erros[] = $ex->getMessage();
+    // remover colaborador do evento
+    if ($op === 'remover') {
+        $colabId = (int)$_POST['colaborador_id'];
+        $pdo->prepare("DELETE FROM escala_colaboradores WHERE escala_id=? AND colaborador_id=?")
+            ->execute([$escalaId, $colabId]);
+        notificarColaborador($pdo, $colabId, "Você foi removido da escala de " . nomeEvento($pdo,$escalaId) . " pelo administrador.");
+        flash('Colaborador removido do evento.');
+        redirect("admin_escala.php?mes=$mes&ano=$ano");
     }
 
-    if ($erros) flash('Erro ao salvar: ' . implode('; ', $erros), 'erro');
-    else flash($aplicadas . ' alteração(ões) aplicada(s) e colaboradores notificados.');
-    redirect("admin_escala.php?mes=$mes&ano=$ano");
+    // adicionar colaborador ao evento
+    if ($op === 'adicionar') {
+        $novoId = (int)$_POST['novo_id'];
+        if ($novoId) {
+            $nivel = colabNivel($pdo, $novoId);
+            $pdo->prepare(
+                "INSERT INTO escala_colaboradores (escala_id, colaborador_id, nivel_na_escala)
+                 VALUES (?,?,?) ON DUPLICATE KEY UPDATE nivel_na_escala=VALUES(nivel_na_escala)"
+            )->execute([$escalaId, $novoId, $nivel]);
+            notificarColaborador($pdo, $novoId, "Você foi escalado para " . nomeEvento($pdo,$escalaId) . " pelo administrador.");
+            flash('Colaborador adicionado ao evento.');
+        }
+        redirect("admin_escala.php?mes=$mes&ano=$ano");
+    }
+
+    // substituir: sai 'colaborador_id', entra 'novo_id'
+    if ($op === 'substituir') {
+        $saiId   = (int)$_POST['colaborador_id'];
+        $entraId = (int)$_POST['novo_id'];
+        if ($saiId && $entraId && $saiId !== $entraId) {
+            $nivel = colabNivel($pdo, $entraId);
+            $pdo->beginTransaction();
+            try {
+                $pdo->prepare("DELETE FROM escala_colaboradores WHERE escala_id=? AND colaborador_id=?")
+                    ->execute([$escalaId, $saiId]);
+                $pdo->prepare(
+                    "INSERT INTO escala_colaboradores (escala_id, colaborador_id, nivel_na_escala)
+                     VALUES (?,?,?) ON DUPLICATE KEY UPDATE nivel_na_escala=VALUES(nivel_na_escala)"
+                )->execute([$escalaId, $entraId, $nivel]);
+                $pdo->commit();
+                $ev = nomeEvento($pdo,$escalaId);
+                notificarColaborador($pdo, $saiId,   "Você saiu da escala de $ev (troca feita pelo administrador).");
+                notificarColaborador($pdo, $entraId, "Você foi escalado para $ev (troca feita pelo administrador).");
+                flash('Troca realizada e colaboradores avisados.');
+            } catch (Throwable $ex) {
+                $pdo->rollBack();
+                flash('Erro ao substituir.', 'erro');
+            }
+        }
+        redirect("admin_escala.php?mes=$mes&ano=$ano");
+    }
 }
 
 // ------------------------------------------------------------
@@ -87,6 +94,7 @@ $st = $pdo->prepare("SELECT * FROM escalas WHERE mes=? AND ano=? ORDER BY data_e
 $st->execute([$mes, $ano]);
 $eventos = $st->fetchAll();
 
+// escalados por evento
 $escalados = [];
 if ($eventos) {
     $ids = implode(',', array_column($eventos,'id'));
@@ -99,23 +107,23 @@ if ($eventos) {
     foreach ($q as $r) $escalados[$r['escala_id']][] = $r;
 }
 
-$todos = $pdo->query(
-  "SELECT id, nome, nivel FROM colaboradores WHERE ativo=1 ORDER BY FIELD(nivel,'lider','pleno','junior'), nome"
-)->fetchAll();
+// todos os colaboradores ativos (para o select de adicionar/substituir)
+$todos = $pdo->query("SELECT id, nome, nivel FROM colaboradores WHERE ativo=1 ORDER BY FIELD(nivel,'lider','pleno','junior'), nome")->fetchAll();
 
+// indisponibilidades do mês (para sinalizar)
 $indisponMes = [];
 if ($eventos) {
     $q = $pdo->query(
       "SELECT i.escala_id, i.colaborador_id FROM indisponibilidades i
        JOIN escalas e ON e.id=i.escala_id WHERE e.mes=$mes AND e.ano=$ano"
     );
-    foreach ($q as $r) $indisponMes[(int)$r['escala_id']][] = (int)$r['colaborador_id'];
+    foreach ($q as $r) $indisponMes[$r['escala_id']][] = (int)$r['colaborador_id'];
 }
 
 $meses = [1=>'Janeiro',2=>'Fevereiro',3=>'Março',4=>'Abril',5=>'Maio',6=>'Junho',
           7=>'Julho',8=>'Agosto',9=>'Setembro',10=>'Outubro',11=>'Novembro',12=>'Dezembro'];
 
-// estrutura para o JS
+// dados p/ JS validar regra de nível e indisponibilidade no cliente
 $colabInfo = [];
 foreach ($todos as $c) $colabInfo[(int)$c['id']] = ['nome'=>$c['nome'], 'nivel'=>$c['nivel']];
 
@@ -123,7 +131,7 @@ $titulo = 'Ajustar Escala (Admin)';
 require __DIR__ . '/includes/header.php';
 ?>
 <h1 class="page-title">Ajustar escala</h1>
-<p class="page-sub">Marque várias alterações e clique em <b>Salvar todos</b>. A tela não recarrega a cada ação.</p>
+<p class="page-sub">Revise os escalados e faça trocas, inclusões ou remoções em cada evento.</p>
 
 <div class="card">
   <form method="get" style="display:flex;gap:.6rem;align-items:flex-end">
@@ -139,49 +147,59 @@ require __DIR__ . '/includes/header.php';
 <?php if (!$eventos): ?>
   <div class="card"><p class="muted">Nenhum evento neste mês.</p></div>
 <?php else: ?>
-
-  <!-- BARRA DE AÇÃO (topo) -->
-  <div id="barraTopo" class="barra-acao" style="display:none">
-    <span><b id="qtdTopo">0</b> alteração(ões) pendentes</span>
-    <span>
-      <button type="button" class="btn sm sec" onclick="descartarTudo()">Descartar</button>
-      <button type="button" class="btn sm" onclick="salvarTudo()">💾 Salvar todos</button>
-    </span>
-  </div>
-
   <?php foreach ($eventos as $ev):
     $eid = (int)$ev['id'];
     $time = strtotime($ev['data_evento']);
     $equipe = $escalados[$eid] ?? [];
+    $temComp = ((int)$ev['num_colaboradores']) >= 3;
+    // contagem por nível
+    $cont = ['lider'=>0,'pleno'=>0,'junior'=>0];
+    foreach ($equipe as $p) $cont[$p['nivel_na_escala']]++;
   ?>
-  <div class="card evento" data-eid="<?= $eid ?>">
+  <div class="card">
     <div class="flex-between">
       <h2><?= e($ev['evento']) ?> · <?= date('d/m/Y', $time) ?> <span class="muted" style="font-weight:400">(<?= ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][date('w',$time)] ?> · <?= substr($ev['horario_chegada'],0,5) ?>)</span></h2>
+      <span class="badge <?= $ev['status']==='preenchida'?'ok':'warn' ?>"><?= ucfirst($ev['status']) ?> · <?= count($equipe) ?>/<?= $ev['num_colaboradores'] ?></span>
     </div>
 
-    <table class="tab-equipe">
+    <?php if ($temComp): ?>
+      <p class="muted" style="margin-bottom:.6rem">Composição atual: A1 <?= $cont['lider'] ?> · A2 <?= $cont['pleno'] ?> · A3 <?= $cont['junior'] ?>
+      <?php if ($cont['lider']<1 || $cont['pleno']<1 || $cont['junior']<1): ?><span style="color:var(--vermelho)"> — composição incompleta</span><?php endif; ?></p>
+    <?php endif; ?>
+
+    <table>
       <thead><tr><th>Colaborador</th><th>Nível</th><th class="right">Ações</th></tr></thead>
       <tbody>
       <?php foreach ($equipe as $p):
-        $cid = (int)$p['colaborador_id'];
-        $indispEvt = in_array($cid, $indisponMes[$eid] ?? [], true); ?>
-        <tr class="linha-escalado" data-cid="<?= $cid ?>" data-nivel="<?= $p['nivel_na_escala'] ?>">
-          <td>
-            <span class="nome-original"><?= e($p['nome']) ?></span>
-            <span class="nome-pendente" style="display:none"></span>
-            <?php if($indispEvt):?><span class="badge warn">marcou indisponível</span><?php endif;?>
-            <span class="tag-status"></span>
-          </td>
+        $indispEvt = in_array((int)$p['colaborador_id'], $indisponMes[$eid] ?? [], true); ?>
+        <tr>
+          <td><?= e($p['nome']) ?> <?php if($indispEvt):?><span class="badge warn">marcou indisponível</span><?php endif;?></td>
           <td><span class="badge <?= $p['nivel_na_escala'] ?>"><?= nivelLabel($p['nivel_na_escala']) ?></span></td>
           <td class="right" style="white-space:nowrap">
-            <select class="sel-trocar" style="max-width:170px">
-              <option value="">Trocar por…</option>
-              <?php foreach ($todos as $c): if ($c['id']==$cid) continue; ?>
-                <option value="<?= $c['id'] ?>"><?= e($c['nome']) ?> · <?= e(nivelLabel($c['nivel'])) ?></option>
-              <?php endforeach; ?>
-            </select>
-            <button type="button" class="btn sm danger" onclick="marcarRemover(this)" title="Remover">×</button>
-            <button type="button" class="btn sm sec btn-desfazer" style="display:none" onclick="desfazerLinha(this)">↶ desfazer</button>
+            <!-- substituir -->
+            <form method="post" style="display:inline-flex;gap:.3rem" onsubmit="return validarTroca(this, <?= $eid ?>, <?= (int)$p['colaborador_id'] ?>)">
+              <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
+              <input type="hidden" name="op" value="substituir">
+              <input type="hidden" name="escala_id" value="<?= $eid ?>">
+              <input type="hidden" name="mes" value="<?= $mes ?>"><input type="hidden" name="ano" value="<?= $ano ?>">
+              <input type="hidden" name="colaborador_id" value="<?= $p['colaborador_id'] ?>">
+              <select name="novo_id" required style="max-width:160px">
+                <option value="">Trocar por…</option>
+                <?php foreach ($todos as $c): if ($c['id']==$p['colaborador_id']) continue; ?>
+                  <option value="<?= $c['id'] ?>"><?= e($c['nome']) ?> · <?= e(nivelLabel($c['nivel'])) ?></option>
+                <?php endforeach; ?>
+              </select>
+              <button class="btn sm">Trocar</button>
+            </form>
+            <!-- remover -->
+            <form method="post" style="display:inline" onsubmit="return confirm('Remover <?= e(addslashes($p['nome'])) ?> deste evento?')">
+              <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
+              <input type="hidden" name="op" value="remover">
+              <input type="hidden" name="escala_id" value="<?= $eid ?>">
+              <input type="hidden" name="mes" value="<?= $mes ?>"><input type="hidden" name="ano" value="<?= $ano ?>">
+              <input type="hidden" name="colaborador_id" value="<?= $p['colaborador_id'] ?>">
+              <button class="btn sm danger">×</button>
+            </form>
           </td>
         </tr>
       <?php endforeach; ?>
@@ -189,8 +207,13 @@ require __DIR__ . '/includes/header.php';
       </tbody>
     </table>
 
-    <div class="add-area" style="display:flex;gap:.4rem;margin-top:.8rem;flex-wrap:wrap;align-items:center">
-      <select class="sel-adicionar" style="max-width:220px">
+    <!-- adicionar -->
+    <form method="post" style="display:flex;gap:.4rem;margin-top:.8rem;flex-wrap:wrap" onsubmit="return validarAdd(this, <?= $eid ?>)">
+      <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
+      <input type="hidden" name="op" value="adicionar">
+      <input type="hidden" name="escala_id" value="<?= $eid ?>">
+      <input type="hidden" name="mes" value="<?= $mes ?>"><input type="hidden" name="ano" value="<?= $ano ?>">
+      <select name="novo_id" required style="max-width:220px">
         <option value="">Adicionar colaborador…</option>
         <?php foreach ($todos as $c):
           $jaTem = false; foreach ($equipe as $p) if ($p['colaborador_id']==$c['id']) $jaTem=true;
@@ -198,199 +221,45 @@ require __DIR__ . '/includes/header.php';
           <option value="<?= $c['id'] ?>"><?= e($c['nome']) ?> · <?= e(nivelLabel($c['nivel'])) ?></option>
         <?php endforeach; ?>
       </select>
-      <button type="button" class="btn sm sec" onclick="marcarAdicionar(this)">+ Adicionar</button>
-      <ul class="add-pendentes" style="list-style:none;padding:0;margin:0;display:flex;gap:.3rem;flex-wrap:wrap"></ul>
-    </div>
+      <button class="btn sm sec">+ Adicionar</button>
+    </form>
   </div>
   <?php endforeach; ?>
-
-  <!-- BARRA DE AÇÃO (rodapé) -->
-  <div id="barraBaixo" class="barra-acao" style="display:none">
-    <span><b id="qtdBaixo">0</b> alteração(ões) pendentes</span>
-    <span>
-      <button type="button" class="btn sm sec" onclick="descartarTudo()">Descartar</button>
-      <button type="button" class="btn" onclick="salvarTudo()">💾 Salvar todos</button>
-    </span>
-  </div>
-
-  <!-- Formulário oculto que envia o lote -->
-  <form id="formLote" method="post" style="display:none">
-    <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
-    <input type="hidden" name="op" value="salvar_lote">
-    <input type="hidden" name="mes" value="<?= $mes ?>">
-    <input type="hidden" name="ano" value="<?= $ano ?>">
-    <input type="hidden" name="ops" id="opsField" value="[]">
-  </form>
-
 <?php endif; ?>
-
-<style>
-.barra-acao{
-  position:sticky;top:.6rem;z-index:10;display:flex!important;justify-content:space-between;align-items:center;gap:1rem;
-  background:linear-gradient(120deg,var(--laranja-5),var(--laranja-4));color:#fff;
-  padding:.7rem 1rem;border-radius:12px;margin:1rem 0;box-shadow:var(--sombra)
-}
-#barraBaixo{position:static;margin-top:1rem}
-.barra-acao .btn{background:#fff;color:var(--laranja-6)}
-.barra-acao .btn.sec{background:rgba(255,255,255,.25);color:#fff}
-tr.linha-escalado.pendente-trocar{background:#fff7e3}
-tr.linha-escalado.pendente-remover{background:#fbe0e0;text-decoration:line-through;text-decoration-color:#c0392b}
-.tag-status{font-size:.72rem;font-weight:700;margin-left:.5rem;padding:.1rem .5rem;border-radius:10px;display:none}
-.linha-escalado.pendente-trocar .tag-status{display:inline-block;background:#fde9b8;color:#8a5a10}
-.linha-escalado.pendente-remover .tag-status{display:inline-block;background:#f6cccc;color:#a83b3b;text-decoration:none}
-.add-pendentes li{display:inline-flex;align-items:center;gap:.3rem;background:#dff3e3;color:#2f7d49;
-  border:1px solid #a6d4b0;border-radius:14px;padding:.15rem .45rem;font-size:.78rem;font-weight:600}
-.add-pendentes button{background:none;border:none;cursor:pointer;color:#2f7d49;font-size:.95rem;line-height:1;padding:0 2px}
-</style>
 
 <script>
 const COLAB = <?= json_encode($colabInfo, JSON_UNESCAPED_UNICODE) ?>;
 const INDISP = <?= json_encode($indisponMes, JSON_UNESCAPED_UNICODE) ?>;
 const LABEL = {lider:'A1', pleno:'A2', junior:'A3'};
 
-// Estrutura: array de operações pendentes.
-// cada op: {uid, tipo:'substituir'|'remover'|'adicionar', escala_id, ...campos}
-let pendentes = [];
-
-function compativel(nSai, nEntra){
-  if (nSai === 'lider') return nEntra === 'lider';
-  return nEntra === 'pleno' || nEntra === 'junior';
+// regra: A1 só compatível com A1; A2 e A3 entre si
+function compativel(nivelSai, nivelEntra){
+  if (nivelSai === 'lider') return nivelEntra === 'lider';
+  return nivelEntra === 'pleno' || nivelEntra === 'junior';
 }
-function indisponivel(eid, cid){
-  return (INDISP[eid]||[]).map(Number).includes(parseInt(cid));
+function indisponivel(escalaId, colabId){
+  return (INDISP[escalaId]||[]).includes(parseInt(colabId));
 }
-function uid(){ return 'p'+Math.random().toString(36).slice(2,9); }
-function atualizarBarra(){
-  const n = pendentes.length;
-  document.getElementById('qtdTopo').textContent = n;
-  document.getElementById('qtdBaixo').textContent = n;
-  document.getElementById('barraTopo').style.display = n ? 'flex' : 'none';
-  document.getElementById('barraBaixo').style.display = n ? 'flex' : 'none';
+function validarTroca(form, escalaId, saiId){
+  const entra = form.novo_id.value;
+  if (!entra) return false;
+  const ce = COLAB[entra], cs = COLAB[saiId];
+  let avisos = [];
+  if (cs && ce && !compativel(cs.nivel, ce.nivel))
+    avisos.push(`Níveis diferentes: ${cs.nome} é ${LABEL[cs.nivel]} e ${ce.nome} é ${LABEL[ce.nivel]}.`);
+  if (indisponivel(escalaId, entra))
+    avisos.push(`${ce.nome} marcou indisponibilidade neste evento.`);
+  if (avisos.length)
+    return confirm('Atenção:\n- ' + avisos.join('\n- ') + '\n\nDeseja confirmar mesmo assim?');
+  return true;
 }
-
-// --- TROCAR ---
-document.querySelectorAll('.sel-trocar').forEach(sel=>{
-  sel.addEventListener('change', () => marcarTrocar(sel));
-});
-function marcarTrocar(sel){
-  const entra = sel.value;
-  const tr = sel.closest('tr');
-  const eid = parseInt(tr.closest('.evento').dataset.eid);
-  const sai = parseInt(tr.dataset.cid);
-  if (!entra) return;
-  // remove pendentes anteriores desta mesma linha
-  pendentes = pendentes.filter(p => !(p.tipo!=='adicionar' && p.escala_id===eid && p._linha===tr.dataset.uidLinha));
-  if (!tr.dataset.uidLinha) tr.dataset.uidLinha = uid();
+function validarAdd(form, escalaId){
+  const entra = form.novo_id.value;
+  if (!entra) return false;
   const ce = COLAB[entra];
-  pendentes.push({
-    uid: uid(), _linha: tr.dataset.uidLinha,
-    tipo:'substituir', escala_id:eid, sai_id:sai, entra_id:parseInt(entra)
-  });
-  tr.classList.remove('pendente-remover');
-  tr.classList.add('pendente-trocar');
-  tr.querySelector('.nome-pendente').textContent = ' → ' + ce.nome + ' (' + LABEL[ce.nivel] + ')';
-  tr.querySelector('.nome-pendente').style.display = 'inline';
-  tr.querySelector('.tag-status').textContent = 'trocar';
-  tr.querySelector('.btn-desfazer').style.display = 'inline-block';
-  atualizarBarra();
-}
-
-// --- REMOVER ---
-function marcarRemover(btn){
-  const tr = btn.closest('tr');
-  const eid = parseInt(tr.closest('.evento').dataset.eid);
-  const cid = parseInt(tr.dataset.cid);
-  if (!tr.dataset.uidLinha) tr.dataset.uidLinha = uid();
-  // limpa qualquer pendência anterior da mesma linha
-  pendentes = pendentes.filter(p => !(p._linha === tr.dataset.uidLinha));
-  pendentes.push({
-    uid: uid(), _linha: tr.dataset.uidLinha,
-    tipo:'remover', escala_id:eid, colaborador_id:cid
-  });
-  tr.classList.remove('pendente-trocar');
-  tr.classList.add('pendente-remover');
-  tr.querySelector('.sel-trocar').value = '';
-  tr.querySelector('.nome-pendente').style.display = 'none';
-  tr.querySelector('.tag-status').textContent = 'remover';
-  tr.querySelector('.btn-desfazer').style.display = 'inline-block';
-  atualizarBarra();
-}
-function desfazerLinha(btn){
-  const tr = btn.closest('tr');
-  pendentes = pendentes.filter(p => p._linha !== tr.dataset.uidLinha);
-  tr.classList.remove('pendente-trocar','pendente-remover');
-  tr.querySelector('.sel-trocar').value = '';
-  tr.querySelector('.nome-pendente').style.display = 'none';
-  tr.querySelector('.tag-status').textContent = '';
-  btn.style.display = 'none';
-  atualizarBarra();
-}
-
-// --- ADICIONAR ---
-function marcarAdicionar(btn){
-  const area = btn.closest('.add-area');
-  const sel = area.querySelector('.sel-adicionar');
-  const cid = sel.value;
-  if (!cid) return;
-  // evita duplicar a mesma adição
-  const eid = parseInt(btn.closest('.evento').dataset.eid);
-  if (pendentes.some(p=>p.tipo==='adicionar' && p.escala_id===eid && p.colaborador_id===parseInt(cid))) return;
-  const ce = COLAB[cid];
-  const u = uid();
-  pendentes.push({uid:u, tipo:'adicionar', escala_id:eid, colaborador_id:parseInt(cid)});
-  const ul = area.querySelector('.add-pendentes');
-  const li = document.createElement('li');
-  li.dataset.uid = u;
-  li.innerHTML = '+ ' + ce.nome + ' (' + LABEL[ce.nivel] + ') <button type="button" title="desfazer">×</button>';
-  li.querySelector('button').addEventListener('click', ()=>{
-    pendentes = pendentes.filter(p=>p.uid!==u);
-    li.remove();
-    atualizarBarra();
-  });
-  ul.appendChild(li);
-  sel.value = '';
-  atualizarBarra();
-}
-
-// --- SALVAR / DESCARTAR ---
-function descartarTudo(){
-  if (!pendentes.length) return;
-  if (!confirm('Descartar todas as alterações pendentes?')) return;
-  pendentes = [];
-  document.querySelectorAll('.linha-escalado').forEach(tr=>{
-    tr.classList.remove('pendente-trocar','pendente-remover');
-    tr.querySelector('.sel-trocar').value = '';
-    tr.querySelector('.nome-pendente').style.display = 'none';
-    tr.querySelector('.tag-status').textContent = '';
-    tr.querySelector('.btn-desfazer').style.display = 'none';
-  });
-  document.querySelectorAll('.add-pendentes').forEach(ul => ul.innerHTML = '');
-  atualizarBarra();
-}
-function salvarTudo(){
-  if (!pendentes.length) return;
-  // gera avisos
-  const avisos = [];
-  pendentes.forEach(p=>{
-    if (p.tipo === 'substituir') {
-      const cs = COLAB[p.sai_id], ce = COLAB[p.entra_id];
-      if (cs && ce && !compativel(cs.nivel, ce.nivel))
-        avisos.push(`${cs.nome} (${LABEL[cs.nivel]}) → ${ce.nome} (${LABEL[ce.nivel]}): níveis diferentes.`);
-      if (indisponivel(p.escala_id, p.entra_id))
-        avisos.push(`${ce.nome} marcou indisponibilidade.`);
-    }
-    if (p.tipo === 'adicionar') {
-      if (indisponivel(p.escala_id, p.colaborador_id))
-        avisos.push(`${COLAB[p.colaborador_id].nome} marcou indisponibilidade no evento que recebe.`);
-    }
-  });
-  if (avisos.length) {
-    if (!confirm('Atenção:\n- ' + avisos.join('\n- ') + `\n\nDeseja salvar ${pendentes.length} alteração(ões) mesmo assim?`)) return;
-  } else {
-    if (!confirm(`Salvar ${pendentes.length} alteração(ões)?`)) return;
-  }
-  document.getElementById('opsField').value = JSON.stringify(pendentes);
-  document.getElementById('formLote').submit();
+  if (indisponivel(escalaId, entra))
+    return confirm(`Atenção: ${ce.nome} marcou indisponibilidade neste evento.\n\nAdicionar mesmo assim?`);
+  return true;
 }
 </script>
 <?php require __DIR__ . '/includes/footer.php'; ?>
