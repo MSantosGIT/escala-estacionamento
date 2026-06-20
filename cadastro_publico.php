@@ -18,7 +18,7 @@ if (empty($_SESSION['pub_csrf'])) {
 
 $erros   = [];
 $sucesso = false;
-$old     = ['marca'=>'','modelo'=>'','cor'=>'','placa'=>'','proprietario'=>'','celular'=>''];
+$old     = ['marca'=>'','modelo'=>'','cor'=>'','placa'=>'','proprietario'=>'','celular'=>'','celular2'=>''];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 1) CSRF
@@ -45,6 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'placa'        => strtoupper(trim($_POST['placa'] ?? '')),
             'proprietario' => trim($_POST['proprietario'] ?? ''),
             'celular'      => trim($_POST['celular'] ?? ''),
+            'celular2'     => trim($_POST['celular2'] ?? ''),
         ];
 
         // 4) validações
@@ -89,9 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // 5) grava (aguardando aprovação)
         if (!$erros) {
             db()->prepare(
-              "INSERT INTO veiculos (marca,modelo,cor,placa,proprietario,celular,foto,origem,aprovado)
-               VALUES (?,?,?,?,?,?,?, 'publico', 0)"
-            )->execute([$old['marca'],$old['modelo'],$old['cor'],$placa,$old['proprietario'],$old['celular'],$foto]);
+              "INSERT INTO veiculos (marca,modelo,cor,placa,proprietario,celular,celular2,foto,origem,aprovado)
+               VALUES (?,?,?,?,?,?,?,?, 'publico', 0)"
+            )->execute([$old['marca'],$old['modelo'],$old['cor'],$placa,$old['proprietario'],$old['celular'],$old['celular2'],$foto]);
 
             $_SESSION['pub_envios'][] = $agora;
             // renova o token para evitar reenvio
@@ -107,8 +108,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cadastro de Veículo · Estacionamento</title>
-<link rel="stylesheet" href="assets/css/style.css">
+<title>Cadastro de Veículo · Apoio Externo</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e8843f">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="icon" href="assets/icons/favicon.png" type="image/png">
+<link rel="stylesheet" href="assets/css/style.css?v=3">
 </head>
 <body>
 <div class="login-wrap" style="align-items:flex-start;padding-top:3rem">
@@ -151,6 +156,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="form-row">
           <div><label>Seu nome (proprietário)</label><input name="proprietario" required value="<?= esc($old['proprietario']) ?>"></div>
           <div><label>Celular</label><input name="celular" required placeholder="(61) 99999-9999" value="<?= esc($old['celular']) ?>"></div>
+        </div>
+        <div class="form-row">
+          <div><label>2º telefone (opcional)</label><input name="celular2" placeholder="(61) 99999-9999" value="<?= esc($old['celular2']) ?>"></div>
         </div>
         <div style="margin-bottom:1.2rem">
           <label>Foto do veículo (opcional)</label>

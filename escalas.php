@@ -7,6 +7,9 @@ $pdo = db();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ehAdmin()) {
     validarCSRF();
     $op = $_POST['op'] ?? '';
+    // mês/ano da tela (vem nos forms) — usado para voltar à mesma visualização
+    $telaMes = (int)($_POST['mes'] ?? date('n'));
+    $telaAno = (int)($_POST['ano'] ?? date('Y'));
 
     if ($op === 'criar') {
         $data = $_POST['data_evento'];
@@ -25,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ehAdmin()) {
     if ($op === 'domingos') {
         $ano = (int)$_POST['ano'];
         $n = criarDomingosDoAno($pdo, $ano);
-        flash("$n domingos (Culto de Colaboração 17:45) criados para $ano.");
+        flash("$n domingos (Culto de Celebração 17:45) criados para $ano.");
     }
 
     if ($op === 'gerar') {
@@ -47,11 +50,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ehAdmin()) {
         flash($msg, $falhas?'erro':'sucesso');
     }
 
+    if ($op === 'gerar_mes') {
+        $res = gerarMesSeguinteManual($pdo);
+        if ($res === null) {
+            flash('A escala do mês seguinte já havia sido gerada.', 'erro');
+        } else {
+            $msg = "Escala do mês seguinte gerada: {$res['completas']} completo(s)";
+            if ($res['parciais'] > 0) $msg .= ", {$res['parciais']} parcial(is) para ajuste";
+            $msg .= '.';
+            flash($msg, $res['parciais'] ? 'erro' : 'sucesso');
+        }
+    }
+
     if ($op === 'excluir') {
         $pdo->prepare("DELETE FROM escalas WHERE id=?")->execute([(int)$_POST['escala_id']]);
         flash('Escala excluída.');
     }
-    redirect('escalas.php');
+    // preserva o mês/ano que estava em tela ao recarregar
+    redirect("escalas.php?mes=$telaMes&ano=$telaAno");
 }
 
 // filtros
@@ -89,6 +105,8 @@ require __DIR__ . '/includes/header.php';
     <form method="post">
       <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
       <input type="hidden" name="op" value="criar">
+      <input type="hidden" name="mes" value="<?= $mes ?>">
+      <input type="hidden" name="ano" value="<?= $ano ?>">
       <div class="form-row">
         <div><label>Data</label><input type="date" name="data_evento" required></div>
         <div><label>Horário de chegada</label><input type="time" name="horario_chegada" value="17:45" required></div>
@@ -97,7 +115,7 @@ require __DIR__ . '/includes/header.php';
         <div><label>Evento</label><input name="evento" required></div>
         <div><label>Nº de colaboradores</label><input type="number" name="num_colaboradores" min="1" value="3" required></div>
       </div>
-      <div class="check" style="margin-bottom:1rem"><input type="checkbox" name="exige_lider" id="el" checked><label for="el" style="margin:0">Exige colaborador líder</label></div>
+      <div class="check" style="margin-bottom:1rem"><input type="checkbox" name="exige_lider" id="el" checked><label for="el" style="margin:0">Exige colaborador A1</label></div>
       <button class="btn">Criar evento</button>
     </form>
   </div>
@@ -107,7 +125,7 @@ require __DIR__ . '/includes/header.php';
     <form method="post" style="margin-bottom:1.2rem">
       <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
       <input type="hidden" name="op" value="domingos">
-      <label>Gerar domingos do ano (Culto de Colaboração · 17:45)</label>
+      <label>Gerar domingos do ano (Culto de Celebração · 17:45)</label>
       <div style="display:flex;gap:.6rem">
         <input type="number" name="ano" value="<?= date('Y') ?>" style="max-width:130px">
         <button class="btn sec">Criar domingos</button>
@@ -119,6 +137,14 @@ require __DIR__ . '/includes/header.php';
       <input type="hidden" name="op" value="gerar_lote">
       <label>Preencher automaticamente todas as escalas abertas</label>
       <button class="btn">⚙️ Gerar escala automática</button>
+    </form>
+    <hr style="border:none;border-top:1px solid var(--borda);margin:1rem 0">
+    <form method="post" onsubmit="return confirm('Gerar a escala do mês seguinte agora, respeitando as indisponibilidades já marcadas?')">
+      <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
+      <input type="hidden" name="op" value="gerar_mes">
+      <label>Gerar a escala do mês seguinte (antecipar antes do dia 20)</label>
+      <button class="btn">📅 Gerar mês seguinte</button>
+      <p class="muted" style="margin-top:.4rem">Respeita as indisponibilidades marcadas até agora. Após gerar, o mês não é gerado novamente de forma automática.</p>
     </form>
   </div>
 </div>
@@ -144,7 +170,7 @@ require __DIR__ . '/includes/header.php';
     <?php foreach ($escalas as $es): ?>
       <tr>
         <td><?= date('d/m', strtotime($es['data_evento'])) ?><br><span class="muted"><?= ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][date('w',strtotime($es['data_evento']))] ?></span></td>
-        <td><?= e($es['evento']) ?><br><span class="muted"><?= $es['num_colaboradores'] ?> vaga(s)<?= $es['exige_lider']?' · líder':'' ?></span></td>
+        <td><?= e($es['evento']) ?></td>
         <td><?= substr($es['horario_chegada'],0,5) ?></td>
         <td>
           <?php if (!empty($escalados[$es['id']])): foreach ($escalados[$es['id']] as $p): ?>
@@ -158,12 +184,16 @@ require __DIR__ . '/includes/header.php';
             <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
             <input type="hidden" name="op" value="gerar">
             <input type="hidden" name="escala_id" value="<?= $es['id'] ?>">
+            <input type="hidden" name="mes" value="<?= $mes ?>">
+            <input type="hidden" name="ano" value="<?= $ano ?>">
             <button class="btn sm">Gerar</button>
           </form>
           <form method="post" style="display:inline" onsubmit="return confirm('Excluir escala?')">
             <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
             <input type="hidden" name="op" value="excluir">
             <input type="hidden" name="escala_id" value="<?= $es['id'] ?>">
+            <input type="hidden" name="mes" value="<?= $mes ?>">
+            <input type="hidden" name="ano" value="<?= $ano ?>">
             <button class="btn sm danger">×</button>
           </form>
         </td>

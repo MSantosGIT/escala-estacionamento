@@ -51,10 +51,14 @@ function render(data){
     return;
   }
   let html = '<div class="card"><h2>Resultados <span class="badge ok">'+data.total+'</span></h2>';
-  html += '<table><thead><tr><th>Foto</th><th>Veículo</th><th>Cor</th><th>Placa</th><th>Proprietário</th><th>Celular</th></tr></thead><tbody>';
+  html += '<table><thead><tr><th>Foto</th><th>Veículo</th><th>Cor</th><th>Placa</th><th>Proprietário</th><th>Celular</th><th>2º Tel.</th></tr></thead><tbody>';
   for(const v of data.veiculos){
     const tag = v.origem==='publico' ? ' <span class="badge junior">autocadastro</span>' : '';
-    const zap = v.celular.replace(/\D/g,'');
+    const zap = (v.celular||'').replace(/\D/g,'');
+    const zap2 = (v.celular2||'').replace(/\D/g,'');
+    const cel2html = zap2
+      ? `<a class="btn sm sec" href="https://wa.me/55${zap2}" target="_blank">💬 ${esc(v.celular2)}</a>`
+      : '<span class="muted">—</span>';
     html += `<tr>
       <td>${nivelFoto(v)}</td>
       <td>${esc(v.marca)} ${esc(v.modelo)}${tag}</td>
@@ -62,6 +66,7 @@ function render(data){
       <td><b>${esc(v.placa)}</b></td>
       <td>${esc(v.proprietario)}</td>
       <td><a class="btn sm sec" href="https://wa.me/55${zap}" target="_blank">💬 ${esc(v.celular)}</a></td>
+      <td>${cel2html}</td>
     </tr>`;
   }
   html += '</tbody></table></div>';

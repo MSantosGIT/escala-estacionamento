@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect('usuarios.php');
 }
 
-$colabs = $pdo->query("SELECT id,nome FROM colaboradores WHERE ativo=1 ORDER BY nome")->fetchAll();
+$colabs = $pdo->query("SELECT id,nome FROM colaboradores WHERE ativo=1 ORDER BY FIELD(nivel,'lider','pleno','junior'), nome")->fetchAll();
 $lista  = $pdo->query("SELECT u.*, c.nome AS colab_nome FROM usuarios u LEFT JOIN colaboradores c ON c.id=u.colaborador_id ORDER BY u.tipo,u.nome")->fetchAll();
 $titulo = 'Usuários';
 require __DIR__ . '/includes/header.php';

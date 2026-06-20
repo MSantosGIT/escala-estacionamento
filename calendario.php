@@ -58,12 +58,12 @@ require __DIR__ . '/includes/header.php';
 
 <div class="cal-folha">
   <div class="cal-cabecalho">
-    <div class="cal-marca">🅿️ Escala de Apoio ao Estacionamento</div>
+    <div class="cal-marca">🅿️ Apoio Externo · Gestão de Escala</div>
     <h2 class="cal-titulo"><?= $meses[$mes] ?> de <?= $ano ?></h2>
     <div class="cal-legenda">
-      <span class="badge lider">Líder</span>
-      <span class="badge pleno">Pleno</span>
-      <span class="badge junior">Júnior</span>
+      <span class="badge lider">A1</span>
+      <span class="badge pleno">A2</span>
+      <span class="badge junior">A3</span>
     </div>
   </div>
 
@@ -87,10 +87,13 @@ require __DIR__ . '/includes/header.php';
             $eventosDoDia = $porDia[$dia] ?? []; ?>
             <td class="<?= $fds?'fds':'' ?> <?= $eventosDoDia?'com-evento':'' ?>">
               <div class="num-dia"><?= $dia ?></div>
-              <?php foreach ($eventosDoDia as $ev): ?>
+              <?php
+                $diasSemNome = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+                foreach ($eventosDoDia as $ev): ?>
                 <div class="evento">
+                  <div class="ev-dia"><?= $diasSemNome[$c] ?></div>
                   <div class="ev-nome"><?= e($ev['evento']) ?></div>
-                  <div class="ev-info">⏰ <?= substr($ev['horario_chegada'],0,5) ?> · <?= $ev['num_colaboradores'] ?> vaga(s)</div>
+                  <div class="ev-info">⏰ <?= substr($ev['horario_chegada'],0,5) ?></div>
                   <?php if (!empty($escalados[$ev['id']])): ?>
                     <ul class="ev-equipe">
                       <?php foreach ($escalados[$ev['id']] as $p): ?>
@@ -137,11 +140,12 @@ table.cal td.com-evento{background:linear-gradient(180deg,#fff,#fff7f0)}
   padding:.35rem .4rem;margin-bottom:.3rem}
 .ev-nome{font-weight:700;color:var(--laranja-6);font-size:.74rem;line-height:1.15}
 .ev-info{font-size:.68rem;color:var(--texto-suave);margin:.15rem 0}
+.ev-dia{font-size:.62rem;font-weight:700;color:var(--laranja-6);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.1rem}
 .ev-equipe{list-style:none;margin:.2rem 0 0;padding:0}
 .ev-equipe li{font-size:.7rem;color:var(--texto);display:flex;align-items:center;gap:.3rem;line-height:1.45}
 .ev-vazio{font-size:.68rem;color:var(--vermelho)}
 .dot-lider,.dot-pleno,.dot-junior{width:7px;height:7px;border-radius:50%;flex:0 0 auto}
-.dot-lider{background:#b25410}.dot-pleno{background:#e8843f}.dot-junior{background:#b9a48f}
+.dot-lider{background:#e8843f}.dot-pleno{background:#2e8aa8}.dot-junior{background:#3c9a5a}
 .cal-rodape{text-align:center;color:var(--texto-suave);font-size:.78rem;margin-top:1rem;
   border-top:1px solid var(--borda);padding-top:.7rem}
 
@@ -149,8 +153,8 @@ table.cal td.com-evento{background:linear-gradient(180deg,#fff,#fff7f0)}
 @media print{
   @page{size:A4 landscape;margin:8mm}
   html,body{background:#fff!important;height:auto}
-  .topbar,.no-print,.flash{display:none!important}
-  .container{margin:0;max-width:100%;padding:0}
+  .sidebar,.mobtop,.shade,.no-print,.flash{display:none!important}
+  .conteudo{margin:0!important;max-width:100%;padding:0}
   .cal-folha{box-shadow:none;border:none;padding:0;margin:0;
     height:192mm;display:flex;flex-direction:column}
 
@@ -171,6 +175,7 @@ table.cal td.com-evento{background:linear-gradient(180deg,#fff,#fff7f0)}
   .evento{padding:.12rem .2rem;margin-bottom:.12rem;border-radius:4px;break-inside:avoid}
   .ev-nome{font-size:.58rem;line-height:1.05}
   .ev-info{font-size:.52rem;margin:.04rem 0}
+  .ev-dia{font-size:.5rem;margin-bottom:.04rem}
   .ev-equipe li{font-size:.54rem;line-height:1.2;gap:.18rem}
   .ev-equipe .dot-lider,.ev-equipe .dot-pleno,.ev-equipe .dot-junior{width:5px;height:5px}
   .ev-vazio{font-size:.52rem}

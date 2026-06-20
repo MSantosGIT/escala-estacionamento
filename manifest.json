@@ -1,0 +1,17 @@
+{
+  "name": "Apoio Externo · Gestão de Escala",
+  "short_name": "Apoio Externo",
+  "description": "Sistema de gestão de escala de apoio ao estacionamento.",
+  "start_url": "dashboard.php",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fff7f0",
+  "theme_color": "#e8843f",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

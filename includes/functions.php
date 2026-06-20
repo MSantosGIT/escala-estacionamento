@@ -55,7 +55,7 @@ function exigirAdmin(): void {
 }
 
 function nivelLabel(string $n): string {
-    return ['junior' => 'Júnior', 'pleno' => 'Pleno', 'lider' => 'Líder'][$n] ?? $n;
+    return ['lider' => 'A1', 'pleno' => 'A2', 'junior' => 'A3'][$n] ?? $n;
 }
 
 function tokenCSRF(): string {

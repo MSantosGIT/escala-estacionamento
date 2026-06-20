@@ -10,7 +10,7 @@ if (!ehAdmin()) {
 }
 
 $colabs = ehAdmin()
-  ? $pdo->query("SELECT id,nome FROM colaboradores WHERE ativo=1 ORDER BY nome")->fetchAll()
+  ? $pdo->query("SELECT id,nome FROM colaboradores WHERE ativo=1 ORDER BY FIELD(nivel,'lider','pleno','junior'), nome")->fetchAll()
   : [];
 
 $hist = [];

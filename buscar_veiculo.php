@@ -20,7 +20,7 @@ if (mb_strlen($termo) < 2) {
 $placaLimpa = preg_replace('/[^A-Z0-9]/', '', $termo);
 
 $st = db()->prepare(
-  "SELECT id, marca, modelo, cor, placa, proprietario, celular, foto, origem
+  "SELECT id, marca, modelo, cor, placa, proprietario, celular, celular2, foto, origem
    FROM veiculos
    WHERE aprovado = 1
      AND ( REPLACE(REPLACE(placa,' ',''),'-','') LIKE :p
