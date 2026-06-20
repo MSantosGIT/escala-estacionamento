@@ -87,10 +87,13 @@ require __DIR__ . '/includes/header.php';
             $eventosDoDia = $porDia[$dia] ?? []; ?>
             <td class="<?= $fds?'fds':'' ?> <?= $eventosDoDia?'com-evento':'' ?>">
               <div class="num-dia"><?= $dia ?></div>
-              <?php foreach ($eventosDoDia as $ev): ?>
+              <?php
+                $diasSemNome = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+                foreach ($eventosDoDia as $ev): ?>
                 <div class="evento">
+                  <div class="ev-dia"><?= $diasSemNome[$c] ?></div>
                   <div class="ev-nome"><?= e($ev['evento']) ?></div>
-                  <div class="ev-info">⏰ <?= substr($ev['horario_chegada'],0,5) ?> · <?= $ev['num_colaboradores'] ?> vaga(s)</div>
+                  <div class="ev-info">⏰ <?= substr($ev['horario_chegada'],0,5) ?></div>
                   <?php if (!empty($escalados[$ev['id']])): ?>
                     <ul class="ev-equipe">
                       <?php foreach ($escalados[$ev['id']] as $p): ?>
@@ -137,6 +140,7 @@ table.cal td.com-evento{background:linear-gradient(180deg,#fff,#fff7f0)}
   padding:.35rem .4rem;margin-bottom:.3rem}
 .ev-nome{font-weight:700;color:var(--laranja-6);font-size:.74rem;line-height:1.15}
 .ev-info{font-size:.68rem;color:var(--texto-suave);margin:.15rem 0}
+.ev-dia{font-size:.62rem;font-weight:700;color:var(--laranja-6);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.1rem}
 .ev-equipe{list-style:none;margin:.2rem 0 0;padding:0}
 .ev-equipe li{font-size:.7rem;color:var(--texto);display:flex;align-items:center;gap:.3rem;line-height:1.45}
 .ev-vazio{font-size:.68rem;color:var(--vermelho)}
@@ -171,6 +175,7 @@ table.cal td.com-evento{background:linear-gradient(180deg,#fff,#fff7f0)}
   .evento{padding:.12rem .2rem;margin-bottom:.12rem;border-radius:4px;break-inside:avoid}
   .ev-nome{font-size:.58rem;line-height:1.05}
   .ev-info{font-size:.52rem;margin:.04rem 0}
+  .ev-dia{font-size:.5rem;margin-bottom:.04rem}
   .ev-equipe li{font-size:.54rem;line-height:1.2;gap:.18rem}
   .ev-equipe .dot-lider,.ev-equipe .dot-pleno,.ev-equipe .dot-junior{width:5px;height:5px}
   .ev-vazio{font-size:.52rem}

@@ -72,6 +72,21 @@ da equipe de apoio ao estacionamento.
 4. Respeita a **disponibilidade** por tipo de dia: dias de semana, sábado e domingo.
 5. **Grava o histórico** de cada escalação por colaborador.
 
+## Instalar como app (celular e tablet)
+
+O sistema é um PWA: pode ser instalado na tela inicial e abre em tela cheia, com
+aparência de aplicativo. Requer acesso por **HTTPS** (ou `localhost`); em rede local
+sem HTTPS, o ícone ainda pode ser adicionado, mas alguns recursos do app não ativam.
+
+- **Android (Chrome):** abra o sistema, toque no aviso "Instalar o app" que aparece no
+  topo, ou no menu ⋮ → "Adicionar à tela inicial".
+- **iPhone/iPad (Safari):** toque em Compartilhar → "Adicionar à Tela de Início".
+- **Computador (Chrome/Edge):** ícone de instalar na barra de endereço.
+
+Os ícones ficam em `assets/icons/`, e a aparência (nome, cores) é definida em
+`manifest.json`. O `sw.js` (service worker) habilita a instalação e um cache leve dos
+assets.
+
 ## Instalação
 
 1. Copie a pasta para o diretório do servidor (ex.: `htdocs` / `www`).

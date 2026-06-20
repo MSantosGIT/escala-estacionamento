@@ -147,3 +147,80 @@ tr:hover td{background:var(--laranja-1)}
 .right{text-align:right}
 .flex-between{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
 .foto-mini{width:46px;height:46px;border-radius:10px;object-fit:cover;border:1px solid var(--borda)}
+
+/* ---------- Rodapé do desenvolvedor ---------- */
+.rodape-dev{
+  margin-top:2.5rem;
+  padding:1.1rem 1rem;
+  border-top:1px solid var(--borda);
+  text-align:center;
+  font-size:.85rem;
+  color:var(--texto-suave);
+}
+.rodape-dev strong{color:var(--laranja-6)}
+.rodape-dev a{color:var(--laranja-6);text-decoration:none;font-weight:600;white-space:nowrap}
+.rodape-dev a:hover{text-decoration:underline}
+
+/* =============================================================
+   AJUSTES MOBILE — corrigir layout quebrado em telas pequenas
+   ============================================================= */
+
+/* nunca deixar o body rolar lateralmente */
+html, body { overflow-x: hidden; max-width: 100vw; }
+
+@media (max-width:760px){
+  /* tabelas que transbordam: envelopam num scroll horizontal próprio */
+  .card { overflow-x: auto; }
+  table { font-size: .82rem; }
+  table th, table td { padding: .45rem .35rem; }
+
+  /* títulos e textos um pouco menores */
+  .page-title { font-size: 1.35rem }
+  .page-sub   { font-size: .9rem }
+  h2 { font-size: 1.05rem }
+
+  /* botões e inputs com altura mínima confortável para o dedo */
+  .btn, button.btn, input, select, textarea {
+    min-height: 40px;
+    font-size: 1rem;
+  }
+  .btn.sm { min-height: 34px; font-size: .88rem }
+
+  /* selects e inputs nunca passam da largura da tela */
+  input, select, textarea { max-width: 100%; box-sizing: border-box; }
+
+  /* a barra de "Salvar todos" no admin_escala quebra em duas linhas */
+  .barra-acao {
+    flex-wrap: wrap !important;
+    gap: .5rem !important;
+    padding: .6rem .8rem !important;
+  }
+
+  /* formulários com vários campos lado a lado quebram bem */
+  form[style*="display:flex"] { flex-wrap: wrap !important; }
+  form[style*="display:flex"] > * { min-width: 0 }
+
+  /* card com padding menor */
+  .card { padding: 1rem .85rem; margin-bottom: .9rem }
+
+  /* badges menores */
+  .badge { font-size: .72rem; padding: .12rem .5rem }
+
+  /* dashboard: cards de estatística em 2 colunas no celular comum */
+  .grid, .cols-4 { grid-template-columns: 1fr 1fr !important; gap: .6rem }
+
+  /* stats menores em mobile */
+  .stat { padding: .9rem .8rem }
+  .stat .n { font-size: 1.6rem }
+  .stat .l { font-size: .78rem }
+
+  /* botão fixo de instalar PWA fica acessível, sem cobrir conteúdo */
+  #pwa-instalar { font-size: .88rem; flex-wrap: wrap }
+}
+
+@media (max-width:360px){
+  /* telas bem pequenas: stats em uma coluna só */
+  .grid, .cols-4 { grid-template-columns: 1fr !important }
+  table { font-size: .76rem }
+  .page-title { font-size: 1.2rem }
+}

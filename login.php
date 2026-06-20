@@ -43,8 +43,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Entrar · Escala de Estacionamento</title>
-<link rel="stylesheet" href="assets/css/style.css?v=2">
+<title>Entrar · Apoio Externo</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#e8843f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Apoio Externo">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="icon" href="assets/icons/favicon.png" type="image/png">
+<link rel="stylesheet" href="assets/css/style.css?v=4">
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
 </head>
 <body>
 <div class="login-wrap">
@@ -67,8 +78,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       </div>
       <button class="btn" style="width:100%;justify-content:center">Entrar</button>
     </form>
-    <p class="muted" style="text-align:center;margin-top:1.2rem">admin / admin123</p>
   </div>
 </div>
+<footer class="rodape-dev" style="margin-top:1.5rem">
+  Desenvolvedor <strong>Marielton M Santos</strong>
+  · WhatsApp
+  <a href="https://wa.me/5561999116077" target="_blank" rel="noopener">(61) 99911-6077</a>
+</footer>
 </body>
 </html>

@@ -20,6 +20,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare("DELETE FROM usuarios WHERE id=?")->execute([$id]);
         flash('Usuário removido.');
     }
+    if (($_POST['op'] ?? '')==='resetar_senha') {
+        $id   = (int)$_POST['id'];
+        $nova = $_POST['nova'] ?? '';
+        if (strlen($nova) < 6) {
+            flash('A nova senha precisa ter pelo menos 6 caracteres.', 'erro');
+        } else {
+            $hash = password_hash($nova, PASSWORD_BCRYPT);
+            $pdo->prepare("UPDATE usuarios SET senha=? WHERE id=?")->execute([$hash, $id]);
+            flash('Senha redefinida com sucesso.');
+        }
+    }
     redirect('usuarios.php');
 }
 
@@ -71,6 +82,13 @@ require __DIR__ . '/includes/header.php';
         <td><span class="badge <?= $u['tipo']==='administrador'?'lider':'junior' ?>"><?= ucfirst($u['tipo']) ?></span></td>
         <td><?= e($u['colab_nome'] ?? '—') ?></td>
         <td class="right">
+          <form method="post" style="display:inline" onsubmit="return prepararResetSenha(this)">
+            <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
+            <input type="hidden" name="op" value="resetar_senha">
+            <input type="hidden" name="id" value="<?= $u['id'] ?>">
+            <input type="hidden" name="nova" value="">
+            <button class="btn sm sec" data-nome="<?= e($u['nome']) ?>">🔑 Resetar senha</button>
+          </form>
           <?php if ($u['id'] != usuario()['id']): ?>
           <form method="post" style="display:inline" onsubmit="return confirm('Remover usuário?')">
             <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
@@ -85,4 +103,19 @@ require __DIR__ . '/includes/header.php';
     </tbody>
   </table>
 </div>
+
+<script>
+function prepararResetSenha(form){
+  const nome = form.querySelector('button').dataset.nome || 'este usuário';
+  const nova = prompt('Definir nova senha para "' + nome + '"\n\n(mínimo 6 caracteres)', '');
+  if (nova === null) return false;           // cancelado
+  if (nova.length < 6) {
+    alert('A senha precisa ter ao menos 6 caracteres.');
+    return false;
+  }
+  if (!confirm('Confirmar redefinição da senha de "' + nome + '"?')) return false;
+  form.querySelector('input[name="nova"]').value = nova;
+  return true;
+}
+</script>
 <?php require __DIR__ . '/includes/footer.php'; ?>

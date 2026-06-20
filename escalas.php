@@ -7,6 +7,9 @@ $pdo = db();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ehAdmin()) {
     validarCSRF();
     $op = $_POST['op'] ?? '';
+    // mês/ano da tela (vem nos forms) — usado para voltar à mesma visualização
+    $telaMes = (int)($_POST['mes'] ?? date('n'));
+    $telaAno = (int)($_POST['ano'] ?? date('Y'));
 
     if ($op === 'criar') {
         $data = $_POST['data_evento'];
@@ -63,7 +66,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ehAdmin()) {
         $pdo->prepare("DELETE FROM escalas WHERE id=?")->execute([(int)$_POST['escala_id']]);
         flash('Escala excluída.');
     }
-    redirect('escalas.php');
+    // preserva o mês/ano que estava em tela ao recarregar
+    redirect("escalas.php?mes=$telaMes&ano=$telaAno");
 }
 
 // filtros
@@ -101,6 +105,8 @@ require __DIR__ . '/includes/header.php';
     <form method="post">
       <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
       <input type="hidden" name="op" value="criar">
+      <input type="hidden" name="mes" value="<?= $mes ?>">
+      <input type="hidden" name="ano" value="<?= $ano ?>">
       <div class="form-row">
         <div><label>Data</label><input type="date" name="data_evento" required></div>
         <div><label>Horário de chegada</label><input type="time" name="horario_chegada" value="17:45" required></div>
@@ -164,7 +170,7 @@ require __DIR__ . '/includes/header.php';
     <?php foreach ($escalas as $es): ?>
       <tr>
         <td><?= date('d/m', strtotime($es['data_evento'])) ?><br><span class="muted"><?= ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][date('w',strtotime($es['data_evento']))] ?></span></td>
-        <td><?= e($es['evento']) ?><br><span class="muted"><?= $es['num_colaboradores'] ?> vaga(s)<?= $es['exige_lider']?' · A1':'' ?></span></td>
+        <td><?= e($es['evento']) ?></td>
         <td><?= substr($es['horario_chegada'],0,5) ?></td>
         <td>
           <?php if (!empty($escalados[$es['id']])): foreach ($escalados[$es['id']] as $p): ?>
@@ -178,12 +184,16 @@ require __DIR__ . '/includes/header.php';
             <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
             <input type="hidden" name="op" value="gerar">
             <input type="hidden" name="escala_id" value="<?= $es['id'] ?>">
+            <input type="hidden" name="mes" value="<?= $mes ?>">
+            <input type="hidden" name="ano" value="<?= $ano ?>">
             <button class="btn sm">Gerar</button>
           </form>
           <form method="post" style="display:inline" onsubmit="return confirm('Excluir escala?')">
             <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
             <input type="hidden" name="op" value="excluir">
             <input type="hidden" name="escala_id" value="<?= $es['id'] ?>">
+            <input type="hidden" name="mes" value="<?= $mes ?>">
+            <input type="hidden" name="ano" value="<?= $ano ?>">
             <button class="btn sm danger">×</button>
           </form>
         </td>
