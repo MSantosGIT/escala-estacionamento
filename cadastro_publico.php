@@ -119,6 +119,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="login-wrap" style="align-items:flex-start;padding-top:3rem">
   <div class="login-box" style="max-width:560px">
     <div class="logo">
+      <div class="cab-igreja" style="font-size:.9rem;font-weight:700;color:var(--laranja-6);letter-spacing:.5px;margin-bottom:.4rem;text-align:center;text-transform:uppercase">
+        Apoio Externo · Igreja Primazia
+      </div>
       <div class="ic">🚗</div>
       <h1>Cadastre seu veículo</h1>
       <p>Preencha os dados abaixo para registrar seu veículo no estacionamento.</p>
@@ -172,5 +175,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
   </div>
 </div>
+<footer class="rodape-dev" style="max-width:560px;margin:1.4rem auto 1rem;text-align:center">
+  Desenvolvedor <strong>Marielton M Santos</strong>
+  · WhatsApp
+  <a href="https://wa.me/5561999116077" target="_blank" rel="noopener">(61) 99911-6077</a>
+</footer>
 </body>
 </html>

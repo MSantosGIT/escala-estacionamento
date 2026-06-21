@@ -19,6 +19,51 @@ function nomeEvento(PDO $pdo, int $escalaId): string {
 // ------------------------------------------------------------
 //  SALVAR EM LOTE — recebe JSON com a lista de operações
 // ------------------------------------------------------------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['op'] ?? '') === 'salvar_ordem') {
+    validarCSRF();
+    $mes = (int)$_POST['mes']; $ano = (int)$_POST['ano'];
+    $escalaId = (int)$_POST['escala_id'];
+    $aplicarTodos = ($_POST['escopo'] ?? 'evento') === 'todos';
+    $ordem = json_decode($_POST['ordem'] ?? '[]', true);
+    if (!is_array($ordem)) $ordem = [];
+
+    $pdo->beginTransaction();
+    try {
+        if ($aplicarTodos) {
+            // grava ordem global no colaborador (vale para todos os eventos futuros)
+            $pos = 1;
+            foreach ($ordem as $cid) {
+                $cid = (int)$cid;
+                if ($cid) {
+                    $pdo->prepare("UPDATE colaboradores SET ordem_padrao=? WHERE id=?")
+                        ->execute([$pos, $cid]);
+                    $pos++;
+                }
+            }
+            // limpa posições específicas do evento (para usar a ordem global)
+            $pdo->prepare("UPDATE escala_colaboradores SET posicao=NULL WHERE escala_id=?")->execute([$escalaId]);
+            flash('Ordem aplicada como padrão para todos os eventos.');
+        } else {
+            // ordem específica deste evento
+            $pos = 1;
+            foreach ($ordem as $cid) {
+                $cid = (int)$cid;
+                if ($cid) {
+                    $pdo->prepare("UPDATE escala_colaboradores SET posicao=? WHERE escala_id=? AND colaborador_id=?")
+                        ->execute([$pos, $escalaId, $cid]);
+                    $pos++;
+                }
+            }
+            flash('Ordem salva para este evento.');
+        }
+        $pdo->commit();
+    } catch (Throwable $ex) {
+        $pdo->rollBack();
+        flash('Erro ao salvar a ordem: ' . $ex->getMessage(), 'erro');
+    }
+    redirect("admin_escala.php?mes=$mes&ano=$ano");
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['op'] ?? '') === 'salvar_lote') {
     validarCSRF();
     $mes = (int)$_POST['mes']; $ano = (int)$_POST['ano'];
@@ -99,10 +144,16 @@ $escalados = [];
 if ($eventos) {
     $ids = implode(',', array_column($eventos,'id'));
     $q = $pdo->query(
-      "SELECT ec.escala_id, ec.colaborador_id, c.nome, ec.nivel_na_escala
+      "SELECT ec.escala_id, ec.colaborador_id, c.nome, ec.nivel_na_escala, ec.posicao
        FROM escala_colaboradores ec JOIN colaboradores c ON c.id=ec.colaborador_id
        WHERE ec.escala_id IN ($ids)
-       ORDER BY FIELD(ec.nivel_na_escala,'lider','pleno','junior'), c.nome"
+       ORDER BY
+         ec.posicao IS NULL,                          -- posição específica primeiro
+         ec.posicao,
+         c.ordem_padrao IS NULL,                      -- depois ordem global do colaborador
+         c.ordem_padrao,
+         FIELD(ec.nivel_na_escala,'lider','pleno','junior'),
+         c.nome"
     );
     foreach ($q as $r) $escalados[$r['escala_id']][] = $r;
 }
@@ -168,12 +219,13 @@ require __DIR__ . '/includes/header.php';
     </div>
 
     <table class="tab-equipe">
-      <thead><tr><th>Colaborador</th><th>Nível</th><th class="right">Ações</th></tr></thead>
-      <tbody>
+      <thead><tr><th></th><th>Colaborador</th><th>Nível</th><th class="right">Ações</th></tr></thead>
+      <tbody class="ordenavel" data-eid="<?= $eid ?>">
       <?php foreach ($equipe as $p):
         $cid = (int)$p['colaborador_id'];
         $indispEvt = in_array($cid, $indisponMes[$eid] ?? [], true); ?>
         <tr class="linha-escalado" data-cid="<?= $cid ?>" data-nivel="<?= $p['nivel_na_escala'] ?>">
+          <td class="alca" title="Arrastar para reordenar">⋮⋮</td>
           <td>
             <span class="nome-original"><?= e($p['nome']) ?></span>
             <span class="nome-pendente" style="display:none"></span>
@@ -193,9 +245,28 @@ require __DIR__ . '/includes/header.php';
           </td>
         </tr>
       <?php endforeach; ?>
-      <?php if (!$equipe): ?><tr><td colspan="3" class="muted">Ninguém escalado.</td></tr><?php endif; ?>
+      <?php if (!$equipe): ?><tr><td colspan="4" class="muted">Ninguém escalado.</td></tr><?php endif; ?>
       </tbody>
     </table>
+
+    <?php if ($equipe): ?>
+    <div class="barra-ordem" id="barra-ordem-<?= $eid ?>" style="display:none">
+      <span>Ordem alterada — aplicar:</span>
+      <button type="button" class="btn sm" onclick="salvarOrdem(<?= $eid ?>, 'evento')">Só neste evento</button>
+      <button type="button" class="btn sm sec" onclick="salvarOrdem(<?= $eid ?>, 'todos')">Como padrão pra todos</button>
+      <button type="button" class="btn sm sec" onclick="cancelarOrdem(<?= $eid ?>)">↶ Desfazer</button>
+    </div>
+    <?php endif; ?>
+
+    <form id="form-ordem-<?= $eid ?>" method="post" style="display:none">
+      <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
+      <input type="hidden" name="op" value="salvar_ordem">
+      <input type="hidden" name="escala_id" value="<?= $eid ?>">
+      <input type="hidden" name="mes" value="<?= $mes ?>">
+      <input type="hidden" name="ano" value="<?= $ano ?>">
+      <input type="hidden" name="escopo" value="evento">
+      <input type="hidden" name="ordem" value="[]">
+    </form>
 
     <div class="add-area" style="display:flex;gap:.4rem;margin-top:.8rem;flex-wrap:wrap;align-items:center">
       <select class="sel-adicionar" style="max-width:220px">
@@ -249,6 +320,18 @@ tr.linha-escalado.pendente-remover{background:#fbe0e0;text-decoration:line-throu
 .add-pendentes li{display:inline-flex;align-items:center;gap:.3rem;background:#dff3e3;color:#2f7d49;
   border:1px solid #a6d4b0;border-radius:14px;padding:.15rem .45rem;font-size:.78rem;font-weight:600}
 .add-pendentes button{background:none;border:none;cursor:pointer;color:#2f7d49;font-size:.95rem;line-height:1;padding:0 2px}
+
+/* Arrastar para reordenar */
+.alca{cursor:grab;color:var(--laranja-4);font-weight:700;text-align:center;
+  width:32px;font-size:1.1rem;user-select:none}
+.alca:active{cursor:grabbing}
+tr.linha-escalado{transition:background .15s}
+tr.sortable-chosen{background:#fff5e8 !important}
+tr.sortable-ghost{opacity:.4}
+
+.barra-ordem{display:flex !important;flex-wrap:wrap;gap:.4rem;align-items:center;
+  background:#fff5e8;border:1px solid var(--laranja-3);border-radius:10px;
+  padding:.6rem .8rem;margin-top:.7rem;font-size:.9rem;color:var(--laranja-6)}
 </style>
 
 <script>
@@ -399,6 +482,68 @@ function salvarTudo(){
   }
   document.getElementById('opsField').value = JSON.stringify(pendentes);
   document.getElementById('formLote').submit();
+}
+
+// ============================================================
+//  Arrastar para reordenar (SortableJS)
+// ============================================================
+const ordemOriginal = {};
+const ordemAtual    = {};
+
+// guarda a ordem inicial de cada tbody
+document.querySelectorAll('tbody.ordenavel').forEach(tb => {
+  const eid = tb.dataset.eid;
+  ordemOriginal[eid] = Array.from(tb.querySelectorAll('tr')).map(tr => tr.dataset.cid);
+  ordemAtual[eid]    = [...ordemOriginal[eid]];
+});
+
+function carregarSortable(){
+  document.querySelectorAll('tbody.ordenavel').forEach(tb => {
+    new Sortable(tb, {
+      handle: '.alca',
+      animation: 150,
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      onEnd: () => {
+        const eid = tb.dataset.eid;
+        ordemAtual[eid] = Array.from(tb.querySelectorAll('tr')).map(tr => tr.dataset.cid);
+        const mudou = JSON.stringify(ordemAtual[eid]) !== JSON.stringify(ordemOriginal[eid]);
+        const barra = document.getElementById('barra-ordem-' + eid);
+        if (barra) barra.style.display = mudou ? 'flex' : 'none';
+      }
+    });
+  });
+}
+
+function salvarOrdem(eid, escopo){
+  const form = document.getElementById('form-ordem-' + eid);
+  form.querySelector('input[name=escopo]').value = escopo;
+  form.querySelector('input[name=ordem]').value = JSON.stringify(ordemAtual[eid]);
+  if (escopo === 'todos') {
+    if (!confirm('Aplicar esta ordem como padrão para TODOS os eventos? Os colaboradores aparecerão nesta ordem em todas as escalas.')) return;
+  }
+  form.submit();
+}
+
+function cancelarOrdem(eid){
+  const tb = document.querySelector('tbody.ordenavel[data-eid="'+eid+'"]');
+  // reordena DOM para a ordem original
+  ordemOriginal[eid].forEach(cid => {
+    const tr = tb.querySelector('tr[data-cid="'+cid+'"]');
+    if (tr) tb.appendChild(tr);
+  });
+  ordemAtual[eid] = [...ordemOriginal[eid]];
+  document.getElementById('barra-ordem-' + eid).style.display = 'none';
+}
+
+// carrega SortableJS sob demanda
+if (typeof Sortable === 'undefined') {
+  const s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js';
+  s.onload = carregarSortable;
+  document.head.appendChild(s);
+} else {
+  carregarSortable();
 }
 </script>
 <?php require __DIR__ . '/includes/footer.php'; ?>

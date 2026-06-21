@@ -20,7 +20,13 @@ if ($escalas) {
       "SELECT ec.escala_id, c.nome, c.celular, ec.nivel_na_escala
        FROM escala_colaboradores ec JOIN colaboradores c ON c.id=ec.colaborador_id
        WHERE ec.escala_id IN ($ids)
-       ORDER BY FIELD(ec.nivel_na_escala,'lider','pleno','junior'), c.nome"
+       ORDER BY
+         ec.posicao IS NULL,
+         ec.posicao,
+         c.ordem_padrao IS NULL,
+         c.ordem_padrao,
+         FIELD(ec.nivel_na_escala,'lider','pleno','junior'),
+         c.nome"
     );
     foreach ($q as $r) $escalados[$r['escala_id']][] = $r;
     foreach ($escalas as $es) $porDia[(int)date('j', strtotime($es['data_evento']))][] = $es;

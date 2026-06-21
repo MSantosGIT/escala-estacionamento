@@ -77,20 +77,32 @@ require __DIR__ . '/includes/header.php';
 <h1 class="page-title">Veículos</h1>
 <p class="page-sub">Cadastro dos veículos e proprietários.</p>
 
-<div class="flex-between" style="margin-bottom:1.2rem">
-  <span class="muted">Cadastre manualmente abaixo, importe uma planilha ou compartilhe o link de autocadastro.</span>
-  <a href="importar_veiculos.php" class="btn">📥 Importar CSV</a>
-</div>
+<script>
+function copiarLinkPub(btn){
+  const inp = document.getElementById('linkPub');
+  const texto = inp.value;
+  const ok = () => { btn.textContent = '✓ Copiado'; setTimeout(()=>btn.textContent='Copiar link', 2200); };
+  const erro = () => { btn.textContent = '⚠ Selecionado, use Ctrl+C'; inp.focus(); inp.select(); };
 
-<div class="card">
-  <h2>Link de autocadastro</h2>
-  <p class="muted" style="margin-bottom:.7rem">Compartilhe este link para que qualquer pessoa cadastre o próprio veículo. Os envios aparecem abaixo para aprovação.</p>
-  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-    <input id="linkPub" type="text" readonly value="<?= e($linkPublico) ?>" style="flex:1;min-width:240px">
-    <button type="button" class="btn sec" onclick="navigator.clipboard.writeText(document.getElementById('linkPub').value);this.textContent='✓ Copiado'">Copiar link</button>
-    <a class="btn" href="<?= e($linkPublico) ?>" target="_blank">Abrir</a>
-  </div>
-</div>
+  // 1) tenta a API moderna (só funciona em HTTPS ou localhost)
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(texto).then(ok).catch(()=>fallback());
+    return;
+  }
+  fallback();
+
+  function fallback(){
+    // 2) fallback antigo: seleciona o campo e tenta execCommand
+    inp.focus();
+    inp.select();
+    inp.setSelectionRange(0, 99999);
+    try {
+      const sucesso = document.execCommand('copy');
+      sucesso ? ok() : erro();
+    } catch(e){ erro(); }
+  }
+}
+</script>
 
 <?php if ($pendentes): ?>
 <div class="card" style="border-color:var(--laranja-4)">
@@ -122,6 +134,12 @@ require __DIR__ . '/includes/header.php';
   <button type="button" class="btn-toggle <?= $editar?'ativo':'' ?>" data-alvo="card-novo-veic">
     ➕ <?= $editar ? 'Editar veículo' : 'Novo veículo' ?>
   </button>
+  <button type="button" class="btn-toggle" data-alvo="card-link-autocad">
+    🔗 Link de autocadastro
+  </button>
+  <a class="btn-toggle" href="importar_veiculos.php" style="text-decoration:none">
+    📥 Importar CSV
+  </a>
 </div>
 
 <div id="card-novo-veic" class="card card-recolhivel <?= $editar?'aberto':'' ?>">
@@ -145,6 +163,16 @@ require __DIR__ . '/includes/header.php';
     <button class="btn"><?= $editar ? 'Salvar alterações' : 'Cadastrar' ?></button>
     <?php if ($editar): ?><a href="veiculos.php" class="btn sec">Cancelar</a><?php endif; ?>
   </form>
+</div>
+
+<div id="card-link-autocad" class="card card-recolhivel">
+  <h2>Link de autocadastro</h2>
+  <p class="muted" style="margin-bottom:.7rem">Compartilhe este link para que qualquer pessoa cadastre o próprio veículo. Os envios aparecem abaixo para aprovação.</p>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+    <input id="linkPub" type="text" readonly value="<?= e($linkPublico) ?>" style="flex:1;min-width:240px">
+    <button type="button" class="btn sec" onclick="copiarLinkPub(this)">Copiar link</button>
+    <a class="btn" href="<?= e($linkPublico) ?>" target="_blank">Abrir</a>
+  </div>
 </div>
 
 <div class="card">
