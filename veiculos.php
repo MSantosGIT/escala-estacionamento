@@ -108,17 +108,17 @@ function copiarLinkPub(btn){
 <div class="card" style="border-color:var(--laranja-4)">
   <h2>Aguardando aprovação <span class="badge warn"><?= count($pendentes) ?></span></h2>
   <table>
-    <thead><tr><th>Foto</th><th>Veículo</th><th>Cor</th><th>Placa</th><th>Proprietário</th><th>Celular</th><th>2º Tel.</th><th></th></tr></thead>
+    <thead><tr><th>Placa</th><th>Proprietário</th><th>Veículo</th><th>Cor</th><th>Celular</th><th>2º Tel.</th><th>Foto</th><th></th></tr></thead>
     <tbody>
     <?php foreach ($pendentes as $v): ?>
       <tr>
-        <td><?php if($v['foto']):?><img class="foto-mini" src="<?= e($v['foto']) ?>"><?php else:?><span class="muted">—</span><?php endif;?></td>
-        <td><?= e($v['marca'].' '.$v['modelo']) ?></td>
-        <td><?= e($v['cor']) ?></td>
         <td><b><?= e($v['placa']) ?></b></td>
         <td><?= e($v['proprietario']) ?></td>
+        <td><?= e($v['marca'].' '.$v['modelo']) ?></td>
+        <td><?= e($v['cor']) ?></td>
         <td><?= e($v['celular']) ?></td>
         <td><?= e($v['celular2'] ?? '') ?: '<span class="muted">—</span>' ?></td>
+        <td><?php if($v['foto']):?><img class="foto-mini" src="<?= e($v['foto']) ?>"><?php else:?><span class="muted">—</span><?php endif;?></td>
         <td class="right" style="white-space:nowrap">
           <a class="btn sm" href="?acao=aprovar&id=<?= $v['id'] ?>">Aprovar</a>
           <a class="btn sm danger" href="?acao=rejeitar&id=<?= $v['id'] ?>" onclick="return confirm('Rejeitar e remover este cadastro?')">Rejeitar</a>
@@ -178,17 +178,17 @@ function copiarLinkPub(btn){
 <div class="card">
   <h2>Veículos cadastrados <span class="badge ok"><?= count($lista) ?></span></h2>
   <table>
-    <thead><tr><th>Foto</th><th>Veículo</th><th>Cor</th><th>Placa</th><th>Proprietário</th><th>Celular</th><th>2º Tel.</th><th></th></tr></thead>
+    <thead><tr><th>Placa</th><th>Proprietário</th><th>Veículo</th><th>Cor</th><th>Celular</th><th>2º Tel.</th><th>Foto</th><th></th></tr></thead>
     <tbody>
     <?php foreach ($lista as $v): ?>
       <tr>
-        <td><?php if($v['foto']):?><img class="foto-mini" src="<?= e($v['foto']) ?>"><?php else:?><span class="muted">—</span><?php endif;?></td>
-        <td><?= e($v['marca'].' '.$v['modelo']) ?><?php if(($v['origem']??'')==='publico'):?> <span class="badge junior">autocadastro</span><?php endif;?></td>
-        <td><?= e($v['cor']) ?></td>
         <td><b><?= e($v['placa']) ?></b></td>
         <td><?= e($v['proprietario']) ?></td>
+        <td><?= e($v['marca'].' '.$v['modelo']) ?><?php if(($v['origem']??'')==='publico'):?> <span class="badge junior">autocadastro</span><?php endif;?></td>
+        <td><?= e($v['cor']) ?></td>
         <td><?= e($v['celular']) ?></td>
         <td><?= e($v['celular2'] ?? '') ?: '<span class="muted">—</span>' ?></td>
+        <td><?php if($v['foto']):?><img class="foto-mini" src="<?= e($v['foto']) ?>"><?php else:?><span class="muted">—</span><?php endif;?></td>
         <td class="right" style="white-space:nowrap">
           <a class="btn sm sec" href="?acao=editar&id=<?= $v['id'] ?>">Editar</a>
           <a class="btn sm danger" href="?acao=excluir&id=<?= $v['id'] ?>" onclick="return confirm('Excluir veículo?')">Excluir</a>
