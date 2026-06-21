@@ -48,6 +48,7 @@ if ('serviceWorker' in navigator) {
       navItem('busca.php', '🔍', 'Buscar veículo', $pg);
       navItem('escalas.php', '📋', 'Escalas', $pg);
       navItem('calendario.php', '📅', 'Calendário', $pg);
+      navItem('lista_eventos.php', '🎫', 'Eventos', $pg);
       navItem('trocas.php', '🔁', 'Trocas', $pg);
       navItem('disponibilidade.php', '✅', 'Disponibilidade', $pg);
       navItem('historico.php', '🕘', 'Histórico', $pg);
