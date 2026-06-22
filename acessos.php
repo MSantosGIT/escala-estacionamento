@@ -53,9 +53,7 @@ require __DIR__ . '/includes/header.php';
     <thead>
       <tr>
         <th>Nome</th>
-        <th>Login</th>
         <th>Tipo</th>
-        <th>Colaborador</th>
         <th>Último acesso</th>
         <th>Há quanto tempo</th>
       </tr>
@@ -66,9 +64,7 @@ require __DIR__ . '/includes/header.php';
       ?>
       <tr>
         <td><?= e($u['nome']) ?></td>
-        <td><?= e($u['login']) ?></td>
         <td><span class="badge <?= $u['tipo']==='administrador'?'lider':'pleno' ?>"><?= e(ucfirst($u['tipo'])) ?></span></td>
-        <td><?= e($u['colab_nome'] ?? '—') ?></td>
         <td>
           <?php if ($u['ultimo_acesso']): ?>
             <?= date('d/m/Y H:i', strtotime($u['ultimo_acesso'])) ?>
@@ -80,7 +76,7 @@ require __DIR__ . '/includes/header.php';
       </tr>
       <?php endforeach; ?>
       <?php if (!$lista): ?>
-        <tr><td colspan="6" class="muted">Nenhum usuário cadastrado.</td></tr>
+        <tr><td colspan="4" class="muted">Nenhum usuário cadastrado.</td></tr>
       <?php endif; ?>
     </tbody>
   </table>
