@@ -21,7 +21,7 @@ function navItem($href, $icone, $rotulo, $pg) {
 <meta name="apple-mobile-web-app-title" content="Apoio Externo">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="icon" href="assets/icons/favicon.png" type="image/png">
-<link rel="stylesheet" href="assets/css/style.css?v=5">
+<link rel="stylesheet" href="assets/css/style.css?v=8">
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -62,6 +62,7 @@ if ('serviceWorker' in navigator) {
         navItem('admin_indisponibilidade.php', '🚫', 'Indisp. (Admin)', $pg);
         navItem('veiculos.php', '🚗', 'Veículos', $pg);
         navItem('usuarios.php', '👤', 'Usuários', $pg);
+        navItem('acessos.php', '🕒', 'Acessos', $pg);
       ?>
     <?php endif; ?>
   </nav>
@@ -170,5 +171,31 @@ document.addEventListener('click', (ev) => {
     alvo.classList.add('aberto');
     btn.classList.add('ativo');
   }
+});
+
+// Máscara global de telefone — aplica em todo input com class="mask-tel"
+// Formatos: (DD) 9999-9999 (8 dígitos) ou (DD) 99999-9999 (9 dígitos)
+function formatarTelefone(s){
+  s = (s || '').replace(/\D/g,'').slice(0,11);
+  if (s.length === 0) return '';
+  if (s.length <= 2)  return '(' + s;
+  if (s.length <= 6)  return '(' + s.slice(0,2) + ') ' + s.slice(2);
+  if (s.length <= 10) return '(' + s.slice(0,2) + ') ' + s.slice(2,6) + '-' + s.slice(6);
+  return '(' + s.slice(0,2) + ') ' + s.slice(2,7) + '-' + s.slice(7);
+}
+document.addEventListener('input', (ev) => {
+  const el = ev.target;
+  if (el && el.matches && el.matches('input.mask-tel')) {
+    const pos = el.selectionStart;
+    const antes = el.value.length;
+    el.value = formatarTelefone(el.value);
+    const depois = el.value.length;
+    // tenta manter o cursor onde estava (compensando os caracteres da máscara)
+    el.setSelectionRange(pos + (depois - antes), pos + (depois - antes));
+  }
+});
+// aplica também no carregamento (para valores já preenchidos pelo PHP)
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('input.mask-tel').forEach(i => i.value = formatarTelefone(i.value));
 });
 </script>

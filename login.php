@@ -30,6 +30,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'tipo' => $user['tipo'],
                 'colaborador_id' => $user['colaborador_id'],
             ];
+            // registra a data/hora deste acesso
+            db()->prepare("UPDATE usuarios SET ultimo_acesso = NOW() WHERE id = ?")
+                ->execute([$user['id']]);
             unset($_SESSION['login_tries']);
             redirect('dashboard.php');
         }
@@ -50,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="apple-mobile-web-app-title" content="Apoio Externo">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="icon" href="assets/icons/favicon.png" type="image/png">
-<link rel="stylesheet" href="assets/css/style.css?v=5">
+<link rel="stylesheet" href="assets/css/style.css?v=8">
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
@@ -68,11 +71,11 @@ if ('serviceWorker' in navigator) {
     <?php if ($erro): ?><div class="flash erro"><?= e($erro) ?></div><?php endif; ?>
     <form method="post">
       <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
-      <div style="margin-bottom:1rem">
+      <div style="margin-bottom:.6rem">
         <label>Login</label>
         <input name="login" autofocus required>
       </div>
-      <div style="margin-bottom:1.4rem">
+      <div style="margin-bottom:.9rem">
         <label>Senha</label>
         <input type="password" name="senha" required>
       </div>
@@ -80,7 +83,7 @@ if ('serviceWorker' in navigator) {
     </form>
   </div>
 </div>
-<footer class="rodape-dev" style="margin-top:1.5rem">
+<footer class="rodape-dev centro">
   Desenvolvedor <strong>Marielton M Santos</strong>
   · WhatsApp
   <a href="https://wa.me/5561999116077" target="_blank" rel="noopener">(61) 99911-6077</a>

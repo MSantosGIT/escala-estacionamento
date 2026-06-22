@@ -113,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="theme-color" content="#e8843f">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="icon" href="assets/icons/favicon.png" type="image/png">
-<link rel="stylesheet" href="assets/css/style.css?v=5">
+<link rel="stylesheet" href="assets/css/style.css?v=8">
 </head>
 <body>
 <div class="login-wrap" style="align-items:flex-start;padding-top:3rem">
@@ -158,10 +158,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <div class="form-row">
           <div><label>Seu nome (proprietário)</label><input name="proprietario" required value="<?= esc($old['proprietario']) ?>"></div>
-          <div><label>Celular</label><input name="celular" required placeholder="(61) 99999-9999" value="<?= esc($old['celular']) ?>"></div>
+          <div><label>Celular</label><input class="mask-tel" name="celular" required placeholder="(61) 99999-9999" value="<?= esc($old['celular']) ?>" inputmode="tel"></div>
         </div>
         <div class="form-row">
-          <div><label>2º telefone (opcional)</label><input name="celular2" placeholder="(61) 99999-9999" value="<?= esc($old['celular2']) ?>"></div>
+          <div><label>2º telefone (opcional)</label><input class="mask-tel" name="celular2" placeholder="(61) 99999-9999" value="<?= esc($old['celular2']) ?>" inputmode="tel"></div>
         </div>
         <div style="margin-bottom:1.2rem">
           <label>Foto do veículo (opcional)</label>
@@ -175,10 +175,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
   </div>
 </div>
-<footer class="rodape-dev" style="max-width:560px;margin:1.4rem auto 1rem;text-align:center">
+<footer class="rodape-dev centro">
   Desenvolvedor <strong>Marielton M Santos</strong>
   · WhatsApp
   <a href="https://wa.me/5561999116077" target="_blank" rel="noopener">(61) 99911-6077</a>
 </footer>
+<script>
+function formatarTelefone(s){
+  s = (s || '').replace(/\D/g,'').slice(0,11);
+  if (s.length === 0) return '';
+  if (s.length <= 2)  return '(' + s;
+  if (s.length <= 6)  return '(' + s.slice(0,2) + ') ' + s.slice(2);
+  if (s.length <= 10) return '(' + s.slice(0,2) + ') ' + s.slice(2,6) + '-' + s.slice(6);
+  return '(' + s.slice(0,2) + ') ' + s.slice(2,7) + '-' + s.slice(7);
+}
+document.addEventListener('input', (ev) => {
+  const el = ev.target;
+  if (el && el.matches && el.matches('input.mask-tel')) {
+    const pos = el.selectionStart;
+    const antes = el.value.length;
+    el.value = formatarTelefone(el.value);
+    const depois = el.value.length;
+    el.setSelectionRange(pos + (depois - antes), pos + (depois - antes));
+  }
+});
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('input.mask-tel').forEach(i => i.value = formatarTelefone(i.value));
+});
+</script>
 </body>
 </html>

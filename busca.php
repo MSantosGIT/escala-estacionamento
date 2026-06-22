@@ -105,67 +105,21 @@ cam.addEventListener('change', async ()=>{
   status.textContent = 'Preparando a imagem…';
 
   try{
-    // 1) Pré-processa a imagem: redimensiona, converte para tons de cinza
-    //    e aumenta o contraste antes de jogar no OCR.
+    // Carrega a imagem original
     const imgURL = URL.createObjectURL(file);
     const imgEl = new Image();
     imgEl.src = imgURL;
     await new Promise(r => imgEl.onload = r);
 
-    // redimensiona para no máximo 1200px de largura (mais que isso atrapalha o OCR)
-    const maxW = 1200;
-    const scale = imgEl.width > maxW ? maxW / imgEl.width : 1;
-    const w = Math.round(imgEl.width * scale);
-    const h = Math.round(imgEl.height * scale);
-    const cv = document.createElement('canvas');
-    cv.width = w; cv.height = h;
-    const ctx = cv.getContext('2d');
-    ctx.drawImage(imgEl, 0, 0, w, h);
-    const pixels = ctx.getImageData(0, 0, w, h);
-    const d = pixels.data;
-    // tons de cinza + threshold dinâmico simples (Otsu aproximado)
-    let sum = 0;
-    for (let i = 0; i < d.length; i += 4) {
-      const g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
-      d[i] = d[i+1] = d[i+2] = g;
-      sum += g;
-    }
-    const media = sum / (d.length/4);
-    const lim = media * 0.85;          // limiar abaixo da média = preto
-    for (let i = 0; i < d.length; i += 4) {
-      const v = d[i] < lim ? 0 : 255;
-      d[i] = d[i+1] = d[i+2] = v;
-    }
-    ctx.putImageData(pixels, 0, 0);
-
-    status.textContent = 'Lendo a placa…';
-
-    const { data } = await Tesseract.recognize(cv, 'eng', {
-      logger: m => {
-        if(m.status === 'recognizing text'){
-          bar.style.width = Math.round(m.progress*100) + '%';
-        }
-      },
-      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-      tessedit_pageseg_mode: '7',       // 7 = single line of text (placa é 1 linha)
-    });
-
-    // 2) Limpa texto bruto
-    let bruto = (data.text || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
-
-    // 3) Função que avalia uma sequência de 7 caracteres como placa, aplicando
-    //    correções de OCR comuns (O↔0, I↔1, S↔5, B↔8, Z↔2) só nos lugares onde
-    //    o padrão exige letra ou número.
-    //    Padrões aceitos:
-    //      Antigo:   AAA9999  (3 letras + 4 números)
-    //      Mercosul: AAA9A99  (3 letras + 1 número + 1 letra + 2 números)
+    // 1) PADRÕES DE PLACA BR + função de validação com correções automáticas
+    //    O OCR confunde: O↔0, I↔1, S↔5, B↔8, Z↔2, G↔6, D↔0, Q↔0
     function corrigirPlaca(s){
       if (s.length !== 7) return null;
       const L_para_N = {'O':'0','I':'1','Q':'0','Z':'2','S':'5','B':'8','D':'0','G':'6'};
       const N_para_L = {'0':'O','1':'I','5':'S','8':'B','2':'Z','6':'G'};
       const tipos = [
-        ['L','L','L','N','N','N','N'],   // antigo
-        ['L','L','L','N','L','N','N'],   // mercosul
+        ['L','L','L','N','N','N','N'],   // antigo:   AAA9999
+        ['L','L','L','N','L','N','N'],   // mercosul: AAA9A99
       ];
       for (const t of tipos) {
         let candidata = '';
@@ -179,31 +133,120 @@ cam.addEventListener('change', async ()=>{
             if (ehLetra) candidata += c;
             else if (ehNumero && N_para_L[c]) candidata += N_para_L[c];
             else { ok = false; break; }
-          } else { // N
+          } else {
             if (ehNumero) candidata += c;
             else if (ehLetra && L_para_N[c]) candidata += L_para_N[c];
             else { ok = false; break; }
           }
         }
-        if (ok) return candidata;
+        if (ok) return { texto: candidata, valida: true, padrao: t.join('') };
       }
       return null;
     }
 
-    // 4) Tenta achar 7 caracteres consecutivos que formem uma placa válida.
-    //    Faz uma janela deslizante pelo texto bruto.
-    let placa = null;
-    for (let i = 0; i + 7 <= bruto.length; i++) {
-      const trecho = bruto.substr(i, 7);
-      const corrigida = corrigirPlaca(trecho);
-      if (corrigida) { placa = corrigida; break; }
+    function buscarPlacaNoTexto(texto){
+      const bruto = (texto || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
+      // janela deslizante de 7 caracteres
+      for (let i = 0; i + 7 <= bruto.length; i++) {
+        const t = bruto.substr(i, 7);
+        const c = corrigirPlaca(t);
+        if (c) return { ...c, bruto };
+      }
+      return { texto: bruto.slice(0,7), valida: false, bruto };
     }
-    // fallback: usa os primeiros 7 caracteres se nada encaixou
-    if (!placa && bruto.length >= 5) placa = bruto.slice(0, 7);
+
+    // 2) Gera 3 variações da imagem para tentar o OCR em cada uma
+    function prepararCanvas(modo){
+      const maxW = 1400;
+      const scale = imgEl.width > maxW ? maxW / imgEl.width : 1;
+      const w = Math.round(imgEl.width * scale);
+      const h = Math.round(imgEl.height * scale);
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      const ctx = cv.getContext('2d');
+      ctx.drawImage(imgEl, 0, 0, w, h);
+
+      if (modo === 'original') return cv;
+
+      const px = ctx.getImageData(0, 0, w, h);
+      const d = px.data;
+
+      // tons de cinza primeiro
+      for (let i = 0; i < d.length; i += 4) {
+        const g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+        d[i] = d[i+1] = d[i+2] = g;
+      }
+
+      if (modo === 'global') {
+        // limiar pela média (rápido, bom para iluminação uniforme)
+        let s = 0;
+        for (let i = 0; i < d.length; i += 4) s += d[i];
+        const lim = (s / (d.length/4)) * 0.85;
+        for (let i = 0; i < d.length; i += 4) {
+          const v = d[i] < lim ? 0 : 255;
+          d[i] = d[i+1] = d[i+2] = v;
+        }
+      } else if (modo === 'adaptativo') {
+        // limiar local: cada pixel comparado à média de uma janela 25x25
+        // (melhor para fotos com sombras parciais — comum em placas)
+        const win = 12; // raio = janela 25x25
+        const copia = new Uint8ClampedArray(d.length);
+        copia.set(d);
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            let soma = 0, cnt = 0;
+            for (let dy = -win; dy <= win; dy += 4) {
+              const yy = y + dy; if (yy < 0 || yy >= h) continue;
+              for (let dx = -win; dx <= win; dx += 4) {
+                const xx = x + dx; if (xx < 0 || xx >= w) continue;
+                soma += copia[(yy*w + xx)*4];
+                cnt++;
+              }
+            }
+            const media = soma / cnt;
+            const idx = (y*w + x)*4;
+            const v = copia[idx] < (media - 10) ? 0 : 255;
+            d[idx] = d[idx+1] = d[idx+2] = v;
+          }
+        }
+      }
+      ctx.putImageData(px, 0, 0);
+      return cv;
+    }
+
+    status.textContent = 'Lendo a placa (1/3)…';
+    const tentativas = [];
+
+    // 3) Roda 3 versões com modo "linha única"
+    const variantes = ['adaptativo', 'global', 'original'];
+    for (let i = 0; i < variantes.length; i++) {
+      status.textContent = `Lendo a placa (${i+1}/3)…`;
+      const cv = prepararCanvas(variantes[i]);
+      const { data } = await Tesseract.recognize(cv, 'eng', {
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            const pct = (i + m.progress) / variantes.length;
+            bar.style.width = Math.round(pct*100) + '%';
+          }
+        },
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
+        tessedit_pageseg_mode: '7',
+      });
+      const r = buscarPlacaNoTexto(data.text);
+      tentativas.push({ ...r, modo: variantes[i] });
+      if (r.valida) break;     // se já achou uma válida, para
+    }
+
+    // 4) Escolhe melhor resultado: prioriza placa válida, senão o que tem mais texto reconhecido
+    let melhor = tentativas.find(t => t.valida) || tentativas[0];
+    const placa = melhor.texto;
 
     bar.style.width = '100%';
     if(placa && placa.length >= 5){
-      status.innerHTML = 'Placa detectada: <b>'+esc(placa)+'</b> <span class="muted" style="font-size:.8rem">(confira antes de salvar)</span>';
+      const aviso = melhor.valida
+        ? '<span class="muted" style="font-size:.8rem">(confira antes de salvar)</span>'
+        : '<span class="muted" style="font-size:.8rem;color:#a83b3b">⚠ Não consegui validar o padrão, confira com atenção</span>';
+      status.innerHTML = 'Placa detectada: <b>'+esc(placa)+'</b> '+aviso;
       q.value = placa;
       buscar(placa);
     }else{

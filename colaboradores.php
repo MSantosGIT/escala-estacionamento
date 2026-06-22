@@ -70,7 +70,7 @@ require __DIR__ . '/includes/header.php';
     <input type="hidden" name="id" value="<?= e($editar['id'] ?? '') ?>">
     <div class="form-row">
       <div><label>Nome</label><input name="nome" required value="<?= e($editar['nome'] ?? '') ?>"></div>
-      <div><label>Celular</label><input name="celular" required value="<?= e($editar['celular'] ?? '') ?>"></div>
+      <div><label>Celular</label><input class="mask-tel" name="celular" required placeholder="(61) 99999-9999" inputmode="tel" value="<?= e($editar['celular'] ?? '') ?>"></div>
       <div>
         <label>Nível de experiência</label>
         <select name="nivel">

@@ -61,7 +61,7 @@ body{
 .shade{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:45}
 
 /* ---------- Layout ---------- */
-.conteudo{margin-left:230px;padding:2rem;max-width:1080px}
+.conteudo{margin-left:230px;padding:2rem 2rem 4rem;max-width:1080px}
 
 @media (max-width:760px){
   .sidebar{transform:translateX(-100%);transition:transform .25s;width:78%;max-width:300px}
@@ -132,16 +132,20 @@ tr:hover td{background:var(--laranja-1)}
 .flash.erro{background:#fbe1e1;color:#a83b3b;border:1px solid #f3c6c6}
 
 /* ---------- Login ---------- */
-.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.2rem}
-.login-box{background:#fff;border-radius:22px;box-shadow:var(--sombra);
-  padding:2.5rem;max-width:400px;width:100%;border:1px solid var(--borda)}
-.login-box .logo{text-align:center;margin-bottom:1.5rem}
-.login-box .logo .ic{width:62px;height:62px;border-radius:18px;margin:0 auto .8rem;
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:.8rem;
+  padding-bottom:60px}            /* espaço para o rodapé fixo */
+.login-box{background:#fff;border-radius:18px;box-shadow:var(--sombra);
+  padding:1.4rem 1.6rem;max-width:380px;width:100%;border:1px solid var(--borda)}
+.login-box .logo{text-align:center;margin-bottom:.9rem}
+.login-box .logo .ic{width:50px;height:50px;border-radius:14px;margin:0 auto .4rem;
   background:linear-gradient(135deg,var(--laranja-5),var(--laranja-4));
-  display:flex;align-items:center;justify-content:center;font-size:1.8rem;
-  box-shadow:0 8px 20px rgba(232,132,63,.4)}
-.login-box h1{font-size:1.35rem;color:var(--laranja-6)}
-.login-box p{color:var(--texto-suave);font-size:.88rem}
+  display:flex;align-items:center;justify-content:center;font-size:1.4rem;
+  box-shadow:0 6px 16px rgba(232,132,63,.35)}
+.login-box h1{font-size:1.2rem;color:var(--laranja-6);margin:.1rem 0}
+.login-box p{color:var(--texto-suave);font-size:.82rem;margin:.1rem 0 0}
+.login-box label{font-size:.85rem;margin-bottom:.2rem}
+.login-box input{padding:.55rem .7rem}
+.login-box .flash{padding:.55rem .8rem;margin-bottom:.7rem;font-size:.9rem}
 
 .muted{color:var(--texto-suave);font-size:.85rem}
 .right{text-align:right}
@@ -150,12 +154,20 @@ tr:hover td{background:var(--laranja-1)}
 
 /* ---------- Rodapé do desenvolvedor ---------- */
 .rodape-dev{
-  margin-top:2.5rem;
-  padding:1.1rem 1rem;
+  position:fixed;left:230px;right:0;bottom:0;z-index:40;
+  background:#fff;
+  padding:.55rem 1rem;
   border-top:1px solid var(--borda);
   text-align:center;
-  font-size:.85rem;
+  font-size:.82rem;
   color:var(--texto-suave);
+  box-shadow:0 -2px 8px rgba(0,0,0,.04);
+}
+/* nas telas sem sidebar (login, cadastro público), rodapé ocupa tela inteira */
+.rodape-dev.centro{left:0}
+
+@media (max-width:760px){
+  .rodape-dev{left:0}
 }
 .rodape-dev strong{color:var(--laranja-6)}
 .rodape-dev a{color:var(--laranja-6);text-decoration:none;font-weight:600;white-space:nowrap}

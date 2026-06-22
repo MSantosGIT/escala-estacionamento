@@ -156,8 +156,8 @@ function copiarLinkPub(btn){
     </div>
     <div class="form-row">
       <div><label>Proprietário</label><input name="proprietario" required value="<?= e($editar['proprietario'] ?? '') ?>"></div>
-      <div><label>Celular</label><input name="celular" required value="<?= e($editar['celular'] ?? '') ?>"></div>
-      <div><label>2º telefone (opcional)</label><input name="celular2" value="<?= e($editar['celular2'] ?? '') ?>"></div>
+      <div><label>Celular</label><input class="mask-tel" name="celular" required placeholder="(61) 99999-9999" inputmode="tel" value="<?= e($editar['celular'] ?? '') ?>"></div>
+      <div><label>2º telefone (opcional)</label><input class="mask-tel" name="celular2" placeholder="(61) 99999-9999" inputmode="tel" value="<?= e($editar['celular2'] ?? '') ?>"></div>
       <div><label>Foto</label><input type="file" name="foto" accept="image/*"></div>
     </div>
     <button class="btn"><?= $editar ? 'Salvar alterações' : 'Cadastrar' ?></button>
