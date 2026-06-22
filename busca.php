@@ -15,18 +15,31 @@ require __DIR__ . '/includes/header.php';
     </div>
     <button type="button" class="btn" id="btnFoto">📷 Foto da placa</button>
   </div>
-  <p class="muted" style="margin-top:.6rem">Dica: aproxime a câmera e enquadre só a placa, com boa luz, para melhor leitura. A placa lida pode ser ajustada no campo acima antes de buscar.</p>
+  <p class="muted" style="margin-top:.6rem">Tire a foto, ajuste o quadro sobre a placa e clique em <b>Ler placa</b>.</p>
   <!-- input de câmera: capture=environment abre a traseira no celular -->
   <input type="file" id="cam" accept="image/*" capture="environment" style="display:none">
 
-  <div id="ocrBox" style="display:none;margin-top:1rem">
-    <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap">
-      <img id="preview" class="foto-mini" style="width:120px;height:80px">
-      <div style="flex:1;min-width:200px">
-        <div class="muted" id="ocrStatus">Processando imagem…</div>
-        <div style="height:8px;background:var(--laranja-2);border-radius:6px;overflow:hidden;margin-top:.4rem">
-          <div id="ocrBar" style="height:100%;width:0;background:var(--laranja-5);transition:width .2s"></div>
-        </div>
+  <!-- ÁREA DE RECORTE -->
+  <div id="recorteBox" style="display:none;margin-top:1rem">
+    <div id="cropArea" style="position:relative;display:inline-block;max-width:100%;background:#000;border-radius:10px;overflow:hidden;touch-action:none">
+      <img id="cropImg" style="display:block;max-width:100%;max-height:60vh;user-select:none">
+      <div id="cropOverlay" style="position:absolute;border:2px dashed #fff;box-shadow:0 0 0 9999px rgba(0,0,0,.55);cursor:move;touch-action:none">
+        <!-- alças dos 4 cantos -->
+        <div class="crop-handle" data-corner="nw" style="position:absolute;left:-10px;top:-10px;width:20px;height:20px;background:#e8843f;border:2px solid #fff;border-radius:50%;cursor:nwse-resize"></div>
+        <div class="crop-handle" data-corner="ne" style="position:absolute;right:-10px;top:-10px;width:20px;height:20px;background:#e8843f;border:2px solid #fff;border-radius:50%;cursor:nesw-resize"></div>
+        <div class="crop-handle" data-corner="sw" style="position:absolute;left:-10px;bottom:-10px;width:20px;height:20px;background:#e8843f;border:2px solid #fff;border-radius:50%;cursor:nesw-resize"></div>
+        <div class="crop-handle" data-corner="se" style="position:absolute;right:-10px;bottom:-10px;width:20px;height:20px;background:#e8843f;border:2px solid #fff;border-radius:50%;cursor:nwse-resize"></div>
+      </div>
+    </div>
+    <div style="margin-top:.7rem;display:flex;gap:.5rem;flex-wrap:wrap">
+      <button type="button" class="btn" id="btnLerPlaca">🔍 Ler placa</button>
+      <button type="button" class="btn sec" id="btnRefoto">↻ Refazer foto</button>
+      <button type="button" class="btn sec" id="btnCancelarFoto">Cancelar</button>
+    </div>
+    <div id="ocrStatusBox" style="display:none;margin-top:1rem">
+      <div class="muted" id="ocrStatus">Processando…</div>
+      <div style="height:8px;background:var(--laranja-2);border-radius:6px;overflow:hidden;margin-top:.4rem">
+        <div id="ocrBar" style="height:100%;width:0;background:var(--laranja-5);transition:width .2s"></div>
       </div>
     </div>
   </div>
@@ -91,44 +104,151 @@ q.addEventListener('input', ()=>{
 const cam = document.getElementById('cam');
 document.getElementById('btnFoto').addEventListener('click', ()=>cam.click());
 
-cam.addEventListener('change', async ()=>{
-  if(!cam.files || !cam.files[0]) return;
+// Estado global do recorte
+let imgOriginal = null;          // <img> com a foto carregada
+let cropRect = {x:0, y:0, w:0, h:0};  // em pixels da imagem renderizada na tela
+
+cam.addEventListener('change', () => {
+  if (!cam.files || !cam.files[0]) return;
   const file = cam.files[0];
-  const box = document.getElementById('ocrBox');
-  const bar = document.getElementById('ocrBar');
+  abrirRecorte(file);
+  cam.value = '';
+});
+
+document.getElementById('btnRefoto').addEventListener('click', () => cam.click());
+document.getElementById('btnCancelarFoto').addEventListener('click', fecharRecorte);
+document.getElementById('btnLerPlaca').addEventListener('click', processarRecorte);
+
+function abrirRecorte(file) {
+  const url = URL.createObjectURL(file);
+  imgOriginal = new Image();
+  imgOriginal.onload = () => {
+    const img = document.getElementById('cropImg');
+    img.src = url;
+    img.onload = () => {
+      document.getElementById('recorteBox').style.display = 'block';
+      document.getElementById('ocrStatusBox').style.display = 'none';
+      // posiciona o retângulo inicial ocupando o centro horizontalmente,
+      // e ~25% da altura no meio da imagem
+      const rect = img.getBoundingClientRect();
+      cropRect.w = Math.round(rect.width * 0.7);
+      cropRect.h = Math.round(rect.height * 0.18);
+      cropRect.x = Math.round((rect.width - cropRect.w) / 2);
+      cropRect.y = Math.round((rect.height - cropRect.h) / 2);
+      atualizarOverlay();
+    };
+  };
+  imgOriginal.src = url;
+}
+function fecharRecorte() {
+  document.getElementById('recorteBox').style.display = 'none';
+  imgOriginal = null;
+}
+function atualizarOverlay() {
+  const ov = document.getElementById('cropOverlay');
+  ov.style.left = cropRect.x + 'px';
+  ov.style.top  = cropRect.y + 'px';
+  ov.style.width  = cropRect.w + 'px';
+  ov.style.height = cropRect.h + 'px';
+}
+
+// Drag para mover/redimensionar
+(function setupCrop(){
+  const ov = document.getElementById('cropOverlay');
+  const area = document.getElementById('cropArea');
+  let dragging = null;  // 'move' ou 'nw'/'ne'/'sw'/'se'
+  let startX, startY, startRect;
+
+  function onStart(ev) {
+    ev.preventDefault();
+    const t = ev.touches ? ev.touches[0] : ev;
+    const handle = ev.target.closest('.crop-handle');
+    dragging = handle ? handle.dataset.corner : 'move';
+    startX = t.clientX; startY = t.clientY;
+    startRect = {...cropRect};
+  }
+  function onMove(ev) {
+    if (!dragging) return;
+    ev.preventDefault();
+    const t = ev.touches ? ev.touches[0] : ev;
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+    const img = document.getElementById('cropImg');
+    const rect = img.getBoundingClientRect();
+    if (dragging === 'move') {
+      cropRect.x = Math.max(0, Math.min(rect.width  - cropRect.w, startRect.x + dx));
+      cropRect.y = Math.max(0, Math.min(rect.height - cropRect.h, startRect.y + dy));
+    } else {
+      const min = 40;
+      if (dragging.includes('e')) cropRect.w = Math.max(min, Math.min(rect.width  - startRect.x, startRect.w + dx));
+      if (dragging.includes('w')) {
+        const nx = Math.max(0, startRect.x + dx);
+        cropRect.w = Math.max(min, startRect.w + (startRect.x - nx));
+        cropRect.x = nx;
+      }
+      if (dragging.includes('s')) cropRect.h = Math.max(min, Math.min(rect.height - startRect.y, startRect.h + dy));
+      if (dragging.includes('n')) {
+        const ny = Math.max(0, startRect.y + dy);
+        cropRect.h = Math.max(min, startRect.h + (startRect.y - ny));
+        cropRect.y = ny;
+      }
+    }
+    atualizarOverlay();
+  }
+  function onEnd() { dragging = null; }
+
+  ov.addEventListener('mousedown', onStart);
+  ov.addEventListener('touchstart', onStart, {passive:false});
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('touchmove', onMove, {passive:false});
+  window.addEventListener('mouseup', onEnd);
+  window.addEventListener('touchend', onEnd);
+})();
+
+async function processarRecorte() {
+  if (!imgOriginal) return;
+  const img = document.getElementById('cropImg');
+  const rect = img.getBoundingClientRect();
+  // proporção entre tamanho exibido e tamanho original
+  const escalaX = imgOriginal.naturalWidth  / rect.width;
+  const escalaY = imgOriginal.naturalHeight / rect.height;
+  // recorta na resolução original
+  const sx = Math.round(cropRect.x * escalaX);
+  const sy = Math.round(cropRect.y * escalaY);
+  const sw = Math.round(cropRect.w * escalaX);
+  const sh = Math.round(cropRect.h * escalaY);
+
+  // canvas com o recorte ampliado a 800px de largura (bom pra OCR)
+  const alvoW = 800;
+  const escala = alvoW / sw;
+  const cv = document.createElement('canvas');
+  cv.width  = Math.round(sw * escala);
+  cv.height = Math.round(sh * escala);
+  const ctx = cv.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(imgOriginal, sx, sy, sw, sh, 0, 0, cv.width, cv.height);
+
+  const statusBox = document.getElementById('ocrStatusBox');
   const status = document.getElementById('ocrStatus');
-  const preview = document.getElementById('preview');
-
-  preview.src = URL.createObjectURL(file);
-  box.style.display = 'block';
+  const bar = document.getElementById('ocrBar');
+  statusBox.style.display = 'block';
   bar.style.width = '0';
-  status.textContent = 'Preparando a imagem…';
 
-  try{
-    // Carrega a imagem original
-    const imgURL = URL.createObjectURL(file);
-    const imgEl = new Image();
-    imgEl.src = imgURL;
-    await new Promise(r => imgEl.onload = r);
-
-    // 1) PADRÕES DE PLACA BR + função de validação com correções automáticas
-    //    O OCR confunde: O↔0, I↔1, S↔5, B↔8, Z↔2, G↔6, D↔0, Q↔0
+  try {
     function corrigirPlaca(s){
       if (s.length !== 7) return null;
       const L_para_N = {'O':'0','I':'1','Q':'0','Z':'2','S':'5','B':'8','D':'0','G':'6'};
       const N_para_L = {'0':'O','1':'I','5':'S','8':'B','2':'Z','6':'G'};
       const tipos = [
-        ['L','L','L','N','N','N','N'],   // antigo:   AAA9999
-        ['L','L','L','N','L','N','N'],   // mercosul: AAA9A99
+        ['L','L','L','N','N','N','N'],
+        ['L','L','L','N','L','N','N'],
       ];
       for (const t of tipos) {
-        let candidata = '';
-        let ok = true;
+        let candidata = ''; let ok = true;
         for (let i = 0; i < 7; i++) {
-          const c = s[i];
-          const esperado = t[i];
-          const ehLetra = /[A-Z]/.test(c);
-          const ehNumero = /[0-9]/.test(c);
+          const c = s[i], esperado = t[i];
+          const ehLetra = /[A-Z]/.test(c), ehNumero = /[0-9]/.test(c);
           if (esperado === 'L') {
             if (ehLetra) candidata += c;
             else if (ehNumero && N_para_L[c]) candidata += N_para_L[c];
@@ -139,14 +259,12 @@ cam.addEventListener('change', async ()=>{
             else { ok = false; break; }
           }
         }
-        if (ok) return { texto: candidata, valida: true, padrao: t.join('') };
+        if (ok) return { texto: candidata, valida: true };
       }
       return null;
     }
-
     function buscarPlacaNoTexto(texto){
       const bruto = (texto || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
-      // janela deslizante de 7 caracteres
       for (let i = 0; i + 7 <= bruto.length; i++) {
         const t = bruto.substr(i, 7);
         const c = corrigirPlaca(t);
@@ -155,77 +273,35 @@ cam.addEventListener('change', async ()=>{
       return { texto: bruto.slice(0,7), valida: false, bruto };
     }
 
-    // 2) Gera 3 variações da imagem para tentar o OCR em cada uma
-    function prepararCanvas(modo){
-      const maxW = 1400;
-      const scale = imgEl.width > maxW ? maxW / imgEl.width : 1;
-      const w = Math.round(imgEl.width * scale);
-      const h = Math.round(imgEl.height * scale);
-      const cv = document.createElement('canvas');
-      cv.width = w; cv.height = h;
-      const ctx = cv.getContext('2d');
-      ctx.drawImage(imgEl, 0, 0, w, h);
-
-      if (modo === 'original') return cv;
-
-      const px = ctx.getImageData(0, 0, w, h);
-      const d = px.data;
-
-      // tons de cinza primeiro
+    // pré-processa o recorte (binarização) — opcionalmente
+    function aplicarBinarizacao(canvas){
+      const ctx = canvas.getContext('2d');
+      const px = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = px.data; let soma = 0;
       for (let i = 0; i < d.length; i += 4) {
         const g = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
-        d[i] = d[i+1] = d[i+2] = g;
+        d[i] = d[i+1] = d[i+2] = g; soma += g;
       }
-
-      if (modo === 'global') {
-        // limiar pela média (rápido, bom para iluminação uniforme)
-        let s = 0;
-        for (let i = 0; i < d.length; i += 4) s += d[i];
-        const lim = (s / (d.length/4)) * 0.85;
-        for (let i = 0; i < d.length; i += 4) {
-          const v = d[i] < lim ? 0 : 255;
-          d[i] = d[i+1] = d[i+2] = v;
-        }
-      } else if (modo === 'adaptativo') {
-        // limiar local: cada pixel comparado à média de uma janela 25x25
-        // (melhor para fotos com sombras parciais — comum em placas)
-        const win = 12; // raio = janela 25x25
-        const copia = new Uint8ClampedArray(d.length);
-        copia.set(d);
-        for (let y = 0; y < h; y++) {
-          for (let x = 0; x < w; x++) {
-            let soma = 0, cnt = 0;
-            for (let dy = -win; dy <= win; dy += 4) {
-              const yy = y + dy; if (yy < 0 || yy >= h) continue;
-              for (let dx = -win; dx <= win; dx += 4) {
-                const xx = x + dx; if (xx < 0 || xx >= w) continue;
-                soma += copia[(yy*w + xx)*4];
-                cnt++;
-              }
-            }
-            const media = soma / cnt;
-            const idx = (y*w + x)*4;
-            const v = copia[idx] < (media - 10) ? 0 : 255;
-            d[idx] = d[idx+1] = d[idx+2] = v;
-          }
-        }
+      const lim = (soma / (d.length/4)) * 0.85;
+      for (let i = 0; i < d.length; i += 4) {
+        const v = d[i] < lim ? 0 : 255;
+        d[i] = d[i+1] = d[i+2] = v;
       }
       ctx.putImageData(px, 0, 0);
-      return cv;
     }
 
-    status.textContent = 'Lendo a placa (1/3)…';
+    // 2 tentativas: original ampliado e binarizado
     const tentativas = [];
-
-    // 3) Roda 3 versões com modo "linha única"
-    const variantes = ['adaptativo', 'global', 'original'];
-    for (let i = 0; i < variantes.length; i++) {
-      status.textContent = `Lendo a placa (${i+1}/3)…`;
-      const cv = prepararCanvas(variantes[i]);
-      const { data } = await Tesseract.recognize(cv, 'eng', {
+    for (let i = 0; i < 2; i++) {
+      status.textContent = `Lendo a placa (${i+1}/2)…`;
+      const cvAtual = document.createElement('canvas');
+      cvAtual.width = cv.width; cvAtual.height = cv.height;
+      cvAtual.getContext('2d').drawImage(cv, 0, 0);
+      if (i === 1) aplicarBinarizacao(cvAtual);
+      const { data } = await Tesseract.recognize(cvAtual, 'eng', {
         logger: m => {
           if (m.status === 'recognizing text') {
-            const pct = (i + m.progress) / variantes.length;
+            const pct = (i + m.progress) / 2;
             bar.style.width = Math.round(pct*100) + '%';
           }
         },
@@ -233,29 +309,27 @@ cam.addEventListener('change', async ()=>{
         tessedit_pageseg_mode: '7',
       });
       const r = buscarPlacaNoTexto(data.text);
-      tentativas.push({ ...r, modo: variantes[i] });
-      if (r.valida) break;     // se já achou uma válida, para
+      tentativas.push(r);
+      if (r.valida) break;
     }
 
-    // 4) Escolhe melhor resultado: prioriza placa válida, senão o que tem mais texto reconhecido
-    let melhor = tentativas.find(t => t.valida) || tentativas[0];
+    const melhor = tentativas.find(t => t.valida) || tentativas[0];
     const placa = melhor.texto;
 
     bar.style.width = '100%';
-    if(placa && placa.length >= 5){
+    if (placa && placa.length >= 5) {
       const aviso = melhor.valida
         ? '<span class="muted" style="font-size:.8rem">(confira antes de salvar)</span>'
-        : '<span class="muted" style="font-size:.8rem;color:#a83b3b">⚠ Não consegui validar o padrão, confira com atenção</span>';
-      status.innerHTML = 'Placa detectada: <b>'+esc(placa)+'</b> '+aviso;
+        : '<span class="muted" style="font-size:.8rem;color:#a83b3b">⚠ Padrão não validou, confira com atenção</span>';
+      status.innerHTML = 'Placa detectada: <b>' + esc(placa) + '</b> ' + aviso;
       q.value = placa;
       buscar(placa);
-    }else{
-      status.textContent = 'Não foi possível ler a placa. Digite manualmente.';
+    } else {
+      status.textContent = 'Não consegui ler. Ajuste melhor o quadro e tente de novo.';
     }
-  }catch(err){
-    status.textContent = 'Falha ao processar a imagem. Tente novamente ou digite a placa.';
+  } catch (err) {
+    status.textContent = 'Falha ao processar. Tente refazer a foto.';
   }
-  cam.value = '';
-});
+}
 </script>
 <?php require __DIR__ . '/includes/footer.php'; ?>
