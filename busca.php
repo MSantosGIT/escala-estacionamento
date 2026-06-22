@@ -238,30 +238,62 @@ async function processarRecorte() {
   try {
     function corrigirPlaca(s){
       if (s.length !== 7) return null;
+      // Quando esperado é número e vem letra: mapeia letra → número
       const L_para_N = {'O':'0','I':'1','Q':'0','Z':'2','S':'5','B':'8','D':'0','G':'6'};
-      const N_para_L = {'0':'O','1':'I','5':'S','8':'B','2':'Z','6':'G'};
+      // Quando esperado é letra e vem número: mapeia número → letras possíveis
+      // (cada número pode confundir com mais de uma letra, ex: 0 ↔ O ou D)
+      const N_para_L = {'0':['D','O'],'1':['I'],'5':['S'],'8':['B'],'2':['Z'],'6':['G']};
+      // Quando vem letra mas pode ser outra letra (D↔O é o caso clássico das placas)
+      const L_para_L = {'O':['D','O'], 'D':['D','O']};
+
       const tipos = [
-        ['L','L','L','N','N','N','N'],
-        ['L','L','L','N','L','N','N'],
+        ['L','L','L','N','N','N','N'],   // antigo:   AAA9999
+        ['L','L','L','N','L','N','N'],   // mercosul: AAA9A99
       ];
+
+      const candidatos = [];
       for (const t of tipos) {
-        let candidata = ''; let ok = true;
+        // expande: para cada posição, lista de caracteres possíveis
+        let opcoes = [[]];
+        let ok = true;
         for (let i = 0; i < 7; i++) {
           const c = s[i], esperado = t[i];
           const ehLetra = /[A-Z]/.test(c), ehNumero = /[0-9]/.test(c);
+          let possiveis = [];
           if (esperado === 'L') {
-            if (ehLetra) candidata += c;
-            else if (ehNumero && N_para_L[c]) candidata += N_para_L[c];
-            else { ok = false; break; }
-          } else {
-            if (ehNumero) candidata += c;
-            else if (ehLetra && L_para_N[c]) candidata += L_para_N[c];
-            else { ok = false; break; }
+            if (ehLetra) {
+              possiveis = L_para_L[c] || [c];
+            } else if (ehNumero && N_para_L[c]) {
+              possiveis = N_para_L[c];
+            }
+          } else { // N
+            if (ehNumero) possiveis = [c];
+            else if (ehLetra && L_para_N[c]) possiveis = [L_para_N[c]];
           }
+          if (possiveis.length === 0) { ok = false; break; }
+          // produto cartesiano: combina opções acumuladas com possíveis
+          const novas = [];
+          for (const acc of opcoes) for (const p of possiveis) novas.push([...acc, p]);
+          opcoes = novas;
         }
-        if (ok) return { texto: candidata, valida: true };
+        if (ok) {
+          for (const arr of opcoes) candidatos.push({ texto: arr.join(''), padrao: t.join('') });
+        }
       }
-      return null;
+      if (!candidatos.length) return null;
+
+      // pontuação: priorizar candidatos com 'D' sobre 'O' nas posições de letra
+      // (D é mais comum em placas reais; placas evitam O por causa da confusão com zero)
+      function score(p) {
+        let pts = 0;
+        for (const ch of p.texto) {
+          if (ch === 'D') pts += 2;
+          if (ch === 'O') pts -= 1;
+        }
+        return pts;
+      }
+      candidatos.sort((a,b) => score(b) - score(a));
+      return { texto: candidatos[0].texto, valida: true };
     }
     function buscarPlacaNoTexto(texto){
       const bruto = (texto || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
