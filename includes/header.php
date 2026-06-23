@@ -21,7 +21,7 @@ function navItem($href, $icone, $rotulo, $pg) {
 <meta name="apple-mobile-web-app-title" content="Apoio Externo">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="icon" href="assets/icons/favicon.png" type="image/png">
-<link rel="stylesheet" href="assets/css/style.css?v=8">
+<link rel="stylesheet" href="assets/css/style.css?v=9">
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -35,13 +35,13 @@ if ('serviceWorker' in navigator) {
 <body>
 <div class="mobtop no-print">
   <button class="burger" onclick="document.body.classList.toggle('nav-aberta')" aria-label="Menu">☰</button>
-  <span class="mob-marca"><span class="dot"></span> Apoio Externo</span>
+  <span class="mob-marca"><img class="marca-img" src="assets/icons/icon-192.png" alt=""> Apoio Externo</span>
 </div>
 
 <div class="shade no-print" onclick="document.body.classList.remove('nav-aberta')"></div>
 
 <aside class="sidebar no-print">
-  <div class="sb-marca"><span class="dot"></span> Apoio Externo</div>
+  <div class="sb-marca"><img class="marca-img" src="assets/icons/icon-192.png" alt=""> Apoio Externo</div>
   <nav class="sb-nav">
     <?php
       navItem('dashboard.php', '🏠', 'Início', $pg);

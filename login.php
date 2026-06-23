@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="apple-mobile-web-app-title" content="Apoio Externo">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="icon" href="assets/icons/favicon.png" type="image/png">
-<link rel="stylesheet" href="assets/css/style.css?v=8">
+<link rel="stylesheet" href="assets/css/style.css?v=9">
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
@@ -64,7 +64,7 @@ if ('serviceWorker' in navigator) {
 <div class="login-wrap">
   <div class="login-box">
     <div class="logo">
-      <div class="ic">🅿️</div>
+      <img class="ic-img" src="assets/icons/icon-192.png" alt="Apoio Externo">
       <h1>Apoio Externo</h1>
       <p>Gestão de Escala</p>
     </div>
