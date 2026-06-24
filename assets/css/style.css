@@ -61,14 +61,14 @@ body{
 .shade{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:45}
 
 /* ---------- Layout ---------- */
-.conteudo{margin-left:230px;padding:2rem 2rem 4rem;max-width:1080px}
+.conteudo{margin-left:230px;padding:2rem 2rem 5rem;max-width:1080px}
 
 @media (max-width:760px){
   .sidebar{transform:translateX(-100%);transition:transform .25s;width:78%;max-width:300px}
   body.nav-aberta .sidebar{transform:translateX(0)}
   body.nav-aberta .shade{display:block}
   .mobtop{display:flex}
-  .conteudo{margin-left:0;padding:1.1rem}
+  .conteudo{margin-left:0;padding:1.1rem 1.1rem 5rem}
 }
 .page-title{font-size:1.6rem;margin-bottom:.3rem;color:var(--laranja-6)}
 .page-sub{color:var(--texto-suave);margin-bottom:1.6rem}

@@ -20,49 +20,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('enviar_alerta.php');
     }
 
-    // monta a lista de colaboradores que vão receber
+    // ---- resolve os USUÁRIOS que vão receber o alerta ----
+    // (cada um terá sua própria linha, marcando como visto individualmente)
+    $usuariosAlvo = [];
+
+    // colaboradores selecionados → busca o usuario_id vinculado a cada colaborador
+    $colabIds = [];
     if ($destino === 'selecionados') {
-        $ids = array_filter(array_map('intval', (array)$selecionados));
-        if (!$ids && !$incluirAdmin) {
-            flash('Selecione ao menos um colaborador.', 'erro');
-            redirect('enviar_alerta.php');
-        }
-        $alvos = [];
-        if ($ids) {
-            $in = implode(',', $ids);
-            $alvos = $pdo->query("SELECT id FROM colaboradores WHERE ativo=1 AND id IN ($in)")->fetchAll(PDO::FETCH_COLUMN);
-        }
+        $colabIds = array_filter(array_map('intval', (array)$selecionados));
     } else {
-        $alvos = $pdo->query("SELECT id FROM colaboradores WHERE ativo=1")->fetchAll(PDO::FETCH_COLUMN);
+        $colabIds = $pdo->query("SELECT id FROM colaboradores WHERE ativo=1")->fetchAll(PDO::FETCH_COLUMN);
+    }
+    $qtdColab = 0;
+    if ($colabIds) {
+        $in = implode(',', $colabIds);
+        // pega os usuários ligados a esses colaboradores
+        $us = $pdo->query("SELECT id FROM usuarios WHERE colaborador_id IN ($in)")->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($us as $uid) $usuariosAlvo[(int)$uid] = true;
+        $qtdColab = count($us);
     }
 
-    // insere a notificação para cada colaborador (troca_id NULL = alerta geral)
-    $stmt = $pdo->prepare(
-      "INSERT INTO notificacoes (colaborador_id, para_admin, mensagem, troca_id)
-       VALUES (?, 0, ?, NULL)"
-    );
-    foreach ($alvos as $cid) {
-        $stmt->execute([$cid, $mensagem]);
-    }
-
-    // se marcado, envia também para os administradores (notificação para_admin)
-    $totalAdmin = 0;
+    // administradores → todos os usuários do tipo administrador
+    $qtdAdmin = 0;
     if ($incluirAdmin) {
-        $pdo->prepare(
-          "INSERT INTO notificacoes (colaborador_id, para_admin, mensagem, troca_id)
-           VALUES (NULL, 1, ?, NULL)"
-        )->execute([$mensagem]);
-        $totalAdmin = 1;
+        $ad = $pdo->query("SELECT id FROM usuarios WHERE tipo='administrador'")->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($ad as $uid) $usuariosAlvo[(int)$uid] = true;
+        $qtdAdmin = count($ad);
     }
 
-    if (!$alvos && !$totalAdmin) {
-        flash('Nenhum destinatário para receber o alerta.', 'erro');
+    if (!$usuariosAlvo) {
+        flash('Nenhum destinatário encontrado. Verifique se os colaboradores têm usuário vinculado.', 'erro');
         redirect('enviar_alerta.php');
     }
 
+    // cria o alerta e as linhas de destinatário (uma por usuário)
+    $pdo->prepare("INSERT INTO alertas (mensagem, criado_por) VALUES (?, ?)")
+        ->execute([$mensagem, (int)(usuario()['id'] ?? 0)]);
+    $alertaId = (int)$pdo->lastInsertId();
+
+    $stmt = $pdo->prepare(
+      "INSERT INTO alertas_destinatarios (alerta_id, usuario_id) VALUES (?, ?)"
+    );
+    foreach (array_keys($usuariosAlvo) as $uid) {
+        $stmt->execute([$alertaId, $uid]);
+    }
+
     $partes = [];
-    if ($alvos) $partes[] = count($alvos) . ' colaborador(es)';
-    if ($totalAdmin) $partes[] = 'os administradores';
+    if ($qtdColab) $partes[] = $qtdColab . ' colaborador(es)';
+    if ($qtdAdmin) $partes[] = $qtdAdmin . ' administrador(es)';
     flash('Alerta enviado para ' . implode(' e ', $partes) . '.');
     redirect('enviar_alerta.php');
 }

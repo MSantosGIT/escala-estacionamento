@@ -6,30 +6,17 @@ exigirLogin();
 $pdo = db();
 $u = usuario();
 $meuColabId = (int)($u['colaborador_id'] ?? 0);
+$meuUserId  = (int)($u['id'] ?? 0);
 
-// dispensar um alerta geral (marca a notificação como lida)
+// dispensar um alerta (marca como visto SÓ para este usuário)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['op'] ?? '') === 'dispensar_alerta') {
     validarCSRF();
-    $nid = (int)($_POST['notif_id'] ?? 0);
-    if ($nid && $meuColabId) {
-        // só dispensa se a notificação é deste colaborador e não é de troca
+    $aid = (int)($_POST['alerta_id'] ?? 0);
+    if ($aid && $meuUserId) {
         $pdo->prepare(
-          "UPDATE notificacoes SET lida=1
-           WHERE id=? AND colaborador_id=? AND troca_id IS NULL"
-        )->execute([$nid, $meuColabId]);
-    }
-    redirect('dashboard.php');
-}
-
-// dispensar um alerta geral destinado ao admin
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['op'] ?? '') === 'dispensar_alerta_admin') {
-    validarCSRF();
-    $nid = (int)($_POST['notif_id'] ?? 0);
-    if ($nid && ehAdmin()) {
-        $pdo->prepare(
-          "UPDATE notificacoes SET lida=1
-           WHERE id=? AND para_admin=1 AND troca_id IS NULL"
-        )->execute([$nid]);
+          "UPDATE alertas_destinatarios SET visto_em=NOW()
+           WHERE alerta_id=? AND usuario_id=? AND visto_em IS NULL"
+        )->execute([$aid, $meuUserId]);
     }
     redirect('dashboard.php');
 }
@@ -50,6 +37,20 @@ $nomeMesProx = [1=>'janeiro',2=>'fevereiro',3=>'março',4=>'abril',5=>'maio',6=>
 // notificações do usuário atual
 $minhasNotif = $meuColabId ? notificacoesColaborador($pdo, $meuColabId) : [];
 $notifAdmin  = ehAdmin() ? notificacoesAdmin($pdo) : [];
+
+// alertas gerais ainda não vistos por este usuário
+$meusAlertas = [];
+if ($meuUserId) {
+    $st = $pdo->prepare(
+      "SELECT a.id, a.mensagem
+       FROM alertas_destinatarios d
+       JOIN alertas a ON a.id = d.alerta_id
+       WHERE d.usuario_id = ? AND d.visto_em IS NULL
+       ORDER BY a.criado_em DESC"
+    );
+    $st->execute([$meuUserId]);
+    $meusAlertas = $st->fetchAll();
+}
 
 $totColab  = $pdo->query("SELECT COUNT(*) FROM colaboradores WHERE ativo=1")->fetchColumn();
 $totVeic   = $pdo->query("SELECT COUNT(*) FROM veiculos")->fetchColumn();
@@ -95,45 +96,33 @@ require __DIR__ . '/includes/header.php';
 </div>
 <?php endif; ?>
 
-<?php /* Notificações pessoais do colaborador */ ?>
-<?php foreach ($minhasNotif as $n): ?>
-  <?php $ehTroca = !empty($n['troca_id']); ?>
-  <?php if ($ehTroca): ?>
-    <div class="flash <?= strpos($n['mensagem'],'recusada')!==false||strpos($n['mensagem'],'recusou')!==false ? 'erro':'sucesso' ?>" style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
-      <span>🔔 <?= e($n['mensagem']) ?></span>
-      <a href="trocas.php" class="btn sm">Ver trocas</a>
-    </div>
-  <?php else: ?>
-    <div class="flash aviso" style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
-      <span>📢 <?= e($n['mensagem']) ?></span>
-      <form method="post" style="margin:0">
-        <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
-        <input type="hidden" name="op" value="dispensar_alerta">
-        <input type="hidden" name="notif_id" value="<?= $n['id'] ?>">
-        <button class="btn sm sec" title="Dispensar">✓ Ok</button>
-      </form>
-    </div>
-  <?php endif; ?>
+<?php /* Alertas gerais (enviados pelo admin) — controle individual por usuário */ ?>
+<?php foreach ($meusAlertas as $al): ?>
+  <div class="flash aviso" style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
+    <span>📢 <?= e($al['mensagem']) ?></span>
+    <form method="post" style="margin:0">
+      <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
+      <input type="hidden" name="op" value="dispensar_alerta">
+      <input type="hidden" name="alerta_id" value="<?= $al['id'] ?>">
+      <button class="btn sm" title="Marcar como visto">✓ Ok</button>
+    </form>
+  </div>
 <?php endforeach; ?>
 
-<?php /* Notificações para o admin */ ?>
+<?php /* Notificações pessoais do colaborador (trocas) */ ?>
+<?php foreach ($minhasNotif as $n): ?>
+  <div class="flash <?= strpos($n['mensagem'],'recusada')!==false||strpos($n['mensagem'],'recusou')!==false ? 'erro':'sucesso' ?>" style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
+    <span>🔔 <?= e($n['mensagem']) ?></span>
+    <a href="trocas.php" class="btn sm">Ver trocas</a>
+  </div>
+<?php endforeach; ?>
+
+<?php /* Notificações para o admin (trocas/ajustes de escala) */ ?>
 <?php if (ehAdmin()): foreach ($notifAdmin as $n): ?>
-  <?php if (!empty($n['troca_id']) || strpos($n['mensagem'],'troca')!==false || strpos($n['mensagem'],'escala')!==false || strpos($n['mensagem'],'regerada')!==false): ?>
-    <div class="flash sucesso" style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
-      <span>🔁 <?= e($n['mensagem']) ?></span>
-      <a href="trocas.php" class="btn sm">Ver trocas</a>
-    </div>
-  <?php else: ?>
-    <div class="flash aviso" style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
-      <span>📢 <?= e($n['mensagem']) ?></span>
-      <form method="post" style="margin:0">
-        <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
-        <input type="hidden" name="op" value="dispensar_alerta_admin">
-        <input type="hidden" name="notif_id" value="<?= $n['id'] ?>">
-        <button class="btn sm sec" title="Dispensar">✓ Ok</button>
-      </form>
-    </div>
-  <?php endif; ?>
+  <div class="flash sucesso" style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
+    <span>🔁 <?= e($n['mensagem']) ?></span>
+    <a href="trocas.php" class="btn sm">Ver trocas</a>
+  </div>
 <?php endforeach; endif; ?>
 
 <?php if (ehAdmin() && $pendVeic > 0): ?>
