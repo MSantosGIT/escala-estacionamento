@@ -21,6 +21,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['op'] ?? '') === 'dispensar
     redirect('dashboard.php');
 }
 
+// dispensar um alerta geral destinado ao admin
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['op'] ?? '') === 'dispensar_alerta_admin') {
+    validarCSRF();
+    $nid = (int)($_POST['notif_id'] ?? 0);
+    if ($nid && ehAdmin()) {
+        $pdo->prepare(
+          "UPDATE notificacoes SET lida=1
+           WHERE id=? AND para_admin=1 AND troca_id IS NULL"
+        )->execute([$nid]);
+    }
+    redirect('dashboard.php');
+}
+
 // gatilho: no 1º acesso do ADMIN a partir do dia 20, gera a escala do mês seguinte
 $geracaoAgora = null;
 if (ehAdmin()) {
@@ -105,10 +118,22 @@ require __DIR__ . '/includes/header.php';
 
 <?php /* Notificações para o admin */ ?>
 <?php if (ehAdmin()): foreach ($notifAdmin as $n): ?>
-<div class="flash sucesso" style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
-  <span>🔁 <?= e($n['mensagem']) ?></span>
-  <a href="trocas.php" class="btn sm">Confirmar trocas</a>
-</div>
+  <?php if (!empty($n['troca_id']) || strpos($n['mensagem'],'troca')!==false || strpos($n['mensagem'],'escala')!==false || strpos($n['mensagem'],'regerada')!==false): ?>
+    <div class="flash sucesso" style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
+      <span>🔁 <?= e($n['mensagem']) ?></span>
+      <a href="trocas.php" class="btn sm">Ver trocas</a>
+    </div>
+  <?php else: ?>
+    <div class="flash aviso" style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
+      <span>📢 <?= e($n['mensagem']) ?></span>
+      <form method="post" style="margin:0">
+        <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
+        <input type="hidden" name="op" value="dispensar_alerta_admin">
+        <input type="hidden" name="notif_id" value="<?= $n['id'] ?>">
+        <button class="btn sm sec" title="Dispensar">✓ Ok</button>
+      </form>
+    </div>
+  <?php endif; ?>
 <?php endforeach; endif; ?>
 
 <?php if (ehAdmin() && $pendVeic > 0): ?>
