@@ -63,7 +63,24 @@ if ($acao === 'editar' && ($id = (int)($_GET['id'] ?? 0))) {
 }
 
 $pendentes = $pdo->query("SELECT * FROM veiculos WHERE aprovado=0 ORDER BY criado_em DESC")->fetchAll();
-$lista     = $pdo->query("SELECT * FROM veiculos WHERE aprovado=1 ORDER BY marca,modelo")->fetchAll();
+
+// busca opcional por placa, proprietário ou modelo
+$busca = trim($_GET['busca'] ?? '');
+if ($busca !== '') {
+    $termo = '%' . $busca . '%';
+    $st = $pdo->prepare(
+      "SELECT * FROM veiculos
+       WHERE aprovado=1
+         AND (placa LIKE ? OR proprietario LIKE ? OR marca LIKE ? OR modelo LIKE ?)
+       ORDER BY proprietario, marca, modelo"
+    );
+    $st->execute([$termo, $termo, $termo, $termo]);
+    $lista = $st->fetchAll();
+} else {
+    $lista = $pdo->query(
+      "SELECT * FROM veiculos WHERE aprovado=1 ORDER BY proprietario, marca, modelo"
+    )->fetchAll();
+}
 
 // URL do formulário público
 $base = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS']!=='off' ? 'https' : 'http')
@@ -176,7 +193,19 @@ function copiarLinkPub(btn){
 </div>
 
 <div class="card">
-  <h2>Veículos cadastrados <span class="badge ok"><?= count($lista) ?></span></h2>
+  <div class="flex-between" style="margin-bottom:1rem">
+    <h2 style="margin:0">Veículos cadastrados <span class="badge ok"><?= count($lista) ?></span></h2>
+    <form method="get" style="display:flex;gap:.4rem;align-items:center">
+      <input type="text" name="busca" value="<?= e($busca) ?>" placeholder="🔍 Placa, proprietário ou modelo" style="min-width:240px">
+      <button class="btn sm">Buscar</button>
+      <?php if ($busca !== ''): ?>
+        <a class="btn sm sec" href="veiculos.php">Limpar</a>
+      <?php endif; ?>
+    </form>
+  </div>
+  <?php if ($busca !== ''): ?>
+    <p class="muted" style="margin-top:-.5rem;margin-bottom:.8rem">Resultados para "<?= e($busca) ?>" — <?= count($lista) ?> encontrado(s).</p>
+  <?php endif; ?>
   <table>
     <thead><tr><th>Placa</th><th>Proprietário</th><th>Veículo</th><th>Cor</th><th>Celular</th><th>2º Tel.</th><th>Foto</th><th></th></tr></thead>
     <tbody>
