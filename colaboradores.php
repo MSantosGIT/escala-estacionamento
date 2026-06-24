@@ -50,7 +50,19 @@ if ($acao === 'editar' && ($id = (int)($_GET['id'] ?? 0))) {
     $editar = $st->fetch();
 }
 
-$lista = $pdo->query("SELECT * FROM colaboradores WHERE ativo=1 ORDER BY FIELD(nivel,'lider','pleno','junior'), nome")->fetchAll();
+$busca = trim($_GET['busca'] ?? '');
+if ($busca !== '') {
+    $termo = '%' . $busca . '%';
+    $st = $pdo->prepare(
+      "SELECT * FROM colaboradores
+       WHERE ativo=1 AND (nome LIKE ? OR celular LIKE ?)
+       ORDER BY FIELD(nivel,'lider','pleno','junior'), nome"
+    );
+    $st->execute([$termo, $termo]);
+    $lista = $st->fetchAll();
+} else {
+    $lista = $pdo->query("SELECT * FROM colaboradores WHERE ativo=1 ORDER BY FIELD(nivel,'lider','pleno','junior'), nome")->fetchAll();
+}
 $titulo = 'Colaboradores';
 require __DIR__ . '/includes/header.php';
 ?>
@@ -97,7 +109,17 @@ require __DIR__ . '/includes/header.php';
 </div>
 
 <div class="card">
-  <h2>Equipe cadastrada <span class="badge ok"><?= count($lista) ?></span></h2>
+  <div class="flex-between" style="margin-bottom:1rem">
+    <h2 style="margin:0">Equipe cadastrada <span class="badge ok"><?= count($lista) ?></span></h2>
+    <form method="get" style="display:flex;gap:.4rem;align-items:center">
+      <input type="text" name="busca" value="<?= e($busca) ?>" placeholder="🔍 Nome ou celular" style="min-width:220px">
+      <button class="btn sm">Buscar</button>
+      <?php if ($busca !== ''): ?><a class="btn sm sec" href="colaboradores.php">Limpar</a><?php endif; ?>
+    </form>
+  </div>
+  <?php if ($busca !== ''): ?>
+    <p class="muted" style="margin-top:-.5rem;margin-bottom:.8rem">Resultados para "<?= e($busca) ?>" — <?= count($lista) ?> encontrado(s).</p>
+  <?php endif; ?>
   <table>
     <thead><tr><th>Nome</th><th>Celular</th><th>Nível</th><th>Semana</th><th>Sáb</th><th>Dom</th><th></th></tr></thead>
     <tbody>

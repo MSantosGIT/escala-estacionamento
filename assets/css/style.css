@@ -130,6 +130,7 @@ tr:hover td{background:var(--laranja-1)}
 .flash{padding:.9rem 1.1rem;border-radius:12px;margin-bottom:1.2rem;font-size:.92rem}
 .flash.sucesso{background:#dff3e3;color:#3c7b4c;border:1px solid #bfe3c8}
 .flash.erro{background:#fbe1e1;color:#a83b3b;border:1px solid #f3c6c6}
+.flash.aviso{background:#fff3e0;color:#9a5a12;border:1px solid #ffd9a8}
 
 /* ---------- Login ---------- */
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:.8rem;

@@ -7,6 +7,20 @@ $pdo = db();
 $u = usuario();
 $meuColabId = (int)($u['colaborador_id'] ?? 0);
 
+// dispensar um alerta geral (marca a notificação como lida)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['op'] ?? '') === 'dispensar_alerta') {
+    validarCSRF();
+    $nid = (int)($_POST['notif_id'] ?? 0);
+    if ($nid && $meuColabId) {
+        // só dispensa se a notificação é deste colaborador e não é de troca
+        $pdo->prepare(
+          "UPDATE notificacoes SET lida=1
+           WHERE id=? AND colaborador_id=? AND troca_id IS NULL"
+        )->execute([$nid, $meuColabId]);
+    }
+    redirect('dashboard.php');
+}
+
 // gatilho: no 1º acesso do ADMIN a partir do dia 20, gera a escala do mês seguinte
 $geracaoAgora = null;
 if (ehAdmin()) {
@@ -70,10 +84,23 @@ require __DIR__ . '/includes/header.php';
 
 <?php /* Notificações pessoais do colaborador */ ?>
 <?php foreach ($minhasNotif as $n): ?>
-<div class="flash <?= strpos($n['mensagem'],'recusada')!==false||strpos($n['mensagem'],'recusou')!==false ? 'erro':'sucesso' ?>" style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
-  <span>🔔 <?= e($n['mensagem']) ?></span>
-  <a href="trocas.php" class="btn sm">Ver trocas</a>
-</div>
+  <?php $ehTroca = !empty($n['troca_id']); ?>
+  <?php if ($ehTroca): ?>
+    <div class="flash <?= strpos($n['mensagem'],'recusada')!==false||strpos($n['mensagem'],'recusou')!==false ? 'erro':'sucesso' ?>" style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
+      <span>🔔 <?= e($n['mensagem']) ?></span>
+      <a href="trocas.php" class="btn sm">Ver trocas</a>
+    </div>
+  <?php else: ?>
+    <div class="flash aviso" style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
+      <span>📢 <?= e($n['mensagem']) ?></span>
+      <form method="post" style="margin:0">
+        <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
+        <input type="hidden" name="op" value="dispensar_alerta">
+        <input type="hidden" name="notif_id" value="<?= $n['id'] ?>">
+        <button class="btn sm sec" title="Dispensar">✓ Ok</button>
+      </form>
+    </div>
+  <?php endif; ?>
 <?php endforeach; ?>
 
 <?php /* Notificações para o admin */ ?>

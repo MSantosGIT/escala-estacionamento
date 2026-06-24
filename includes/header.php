@@ -63,6 +63,7 @@ if ('serviceWorker' in navigator) {
         navItem('veiculos.php', '🚗', 'Veículos', $pg);
         navItem('usuarios.php', '👤', 'Usuários', $pg);
         navItem('acessos.php', '🕒', 'Acessos', $pg);
+        navItem('enviar_alerta.php', '📢', 'Enviar alerta', $pg);
       ?>
     <?php endif; ?>
   </nav>

@@ -4,11 +4,24 @@ exigirAdmin();
 $pdo = db();
 
 // busca todos os usuários ordenados pelo acesso mais recente
-$lista = $pdo->query(
-  "SELECT u.id, u.nome, u.login, u.tipo, u.ultimo_acesso, c.nome AS colab_nome
-   FROM usuarios u LEFT JOIN colaboradores c ON c.id=u.colaborador_id
-   ORDER BY u.ultimo_acesso IS NULL, u.ultimo_acesso DESC, u.nome"
-)->fetchAll();
+$busca = trim($_GET['busca'] ?? '');
+if ($busca !== '') {
+    $termo = '%' . $busca . '%';
+    $st = $pdo->prepare(
+      "SELECT u.id, u.nome, u.login, u.tipo, u.ultimo_acesso, c.nome AS colab_nome
+       FROM usuarios u LEFT JOIN colaboradores c ON c.id=u.colaborador_id
+       WHERE u.nome LIKE ? OR u.login LIKE ?
+       ORDER BY u.ultimo_acesso IS NULL, u.ultimo_acesso DESC, u.nome"
+    );
+    $st->execute([$termo, $termo]);
+    $lista = $st->fetchAll();
+} else {
+    $lista = $pdo->query(
+      "SELECT u.id, u.nome, u.login, u.tipo, u.ultimo_acesso, c.nome AS colab_nome
+       FROM usuarios u LEFT JOIN colaboradores c ON c.id=u.colaborador_id
+       ORDER BY u.ultimo_acesso IS NULL, u.ultimo_acesso DESC, u.nome"
+    )->fetchAll();
+}
 
 // quantos acessaram nas últimas 24h, na última semana, total ativo
 $qtdHoje    = 0;
@@ -48,7 +61,17 @@ require __DIR__ . '/includes/header.php';
 </div>
 
 <div class="card">
-  <h2>Lista de usuários</h2>
+  <div class="flex-between" style="margin-bottom:1rem">
+    <h2 style="margin:0">Lista de usuários</h2>
+    <form method="get" style="display:flex;gap:.4rem;align-items:center">
+      <input type="text" name="busca" value="<?= e($busca) ?>" placeholder="🔍 Nome ou login" style="min-width:220px">
+      <button class="btn sm">Buscar</button>
+      <?php if ($busca !== ''): ?><a class="btn sm sec" href="acessos.php">Limpar</a><?php endif; ?>
+    </form>
+  </div>
+  <?php if ($busca !== ''): ?>
+    <p class="muted" style="margin-top:-.5rem;margin-bottom:.8rem">Resultados para "<?= e($busca) ?>" — <?= count($lista) ?> encontrado(s).</p>
+  <?php endif; ?>
   <table>
     <thead>
       <tr>
