@@ -10,13 +10,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $incluirAdmin = isset($_POST['incluir_admin']);
     $selecionados = $_POST['colaboradores'] ?? [];
 
-    // valida mensagem (máx 50 caracteres)
+    // valida mensagem (máx 100 caracteres)
     if ($mensagem === '') {
         flash('Digite a mensagem do alerta.', 'erro');
         redirect('enviar_alerta.php');
     }
-    if (mb_strlen($mensagem) > 50) {
-        flash('A mensagem deve ter no máximo 50 caracteres.', 'erro');
+    if (mb_strlen($mensagem) > 100) {
+        flash('A mensagem deve ter no máximo 100 caracteres.', 'erro');
         redirect('enviar_alerta.php');
     }
 
@@ -83,21 +83,19 @@ require __DIR__ . '/includes/header.php';
     <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
 
     <label>Mensagem do alerta</label>
-    <input type="text" name="mensagem" id="msgAlerta" maxlength="50" required
+    <input type="text" name="mensagem" id="msgAlerta" maxlength="100" required
            placeholder="Ex.: Reunião geral domingo às 16h" autocomplete="off">
     <p class="muted" style="margin:.3rem 0 1rem">
-      <span id="contador">0</span>/50 caracteres
+      <span id="contador">0</span>/100 caracteres
     </p>
 
-    <label>Enviar para</label>
-    <div style="display:flex;gap:1.2rem;margin:.4rem 0 1rem;flex-wrap:wrap">
-      <label class="radio-inline"><input type="radio" name="destino" value="todos" checked onchange="toggleLista()"> Todos os colaboradores</label>
-      <label class="radio-inline"><input type="radio" name="destino" value="selecionados" onchange="toggleLista()"> Selecionar colaboradores</label>
+    <label style="margin-bottom:.5rem">Enviar para</label>
+    <div class="opcoes-destino">
+      <label class="opt"><input type="radio" name="destino" value="todos" checked onchange="toggleLista()"> <span>Todos os colaboradores</span></label>
+      <label class="opt"><input type="radio" name="destino" value="selecionados" onchange="toggleLista()"> <span>Selecionar colaboradores</span></label>
     </div>
 
-    <label class="radio-inline" style="margin-bottom:1rem">
-      <input type="checkbox" name="incluir_admin" value="1"> Enviar também para os administradores
-    </label>
+    <label class="opt opt-admin"><input type="checkbox" name="incluir_admin" value="1"> <span>Enviar também para os administradores</span></label>
 
     <div id="listaColabs" style="display:none;border:1px solid var(--borda);border-radius:10px;padding:.8rem;margin-bottom:1rem;max-height:300px;overflow-y:auto">
       <div style="margin-bottom:.6rem">
@@ -118,7 +116,12 @@ require __DIR__ . '/includes/header.php';
 </div>
 
 <style>
-.radio-inline{display:flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:500}
+.opcoes-destino{display:flex;flex-direction:column;gap:.6rem;margin:.4rem 0 .9rem}
+.opt{display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:500;line-height:1.2}
+.opt input{width:18px;height:18px;flex:0 0 auto;margin:0}
+.opt span{flex:1}
+.opt-admin{padding:.7rem .9rem;background:var(--laranja-1);border:1px solid var(--borda);
+  border-radius:10px;margin-bottom:1.2rem}
 .check-colab{display:flex;align-items:center;gap:.5rem;padding:.35rem 0;cursor:pointer}
 .check-colab input{width:auto}
 </style>
