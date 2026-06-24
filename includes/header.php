@@ -53,6 +53,7 @@ if ('serviceWorker' in navigator) {
       navItem('disponibilidade.php', '✅', 'Disponibilidade', $pg);
       navItem('historico.php', '🕘', 'Histórico', $pg);
       navItem('relatorio_anual.php', '📊', 'Relatório anual', $pg);
+      navItem('sobre.php', 'ℹ️', 'Sobre', $pg);
       if (ehAdmin()):
     ?>
       <div class="sb-sep">Administração</div>
