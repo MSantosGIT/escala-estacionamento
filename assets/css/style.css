@@ -68,7 +68,7 @@ body{
   body.nav-aberta .sidebar{transform:translateX(0)}
   body.nav-aberta .shade{display:block}
   .mobtop{display:flex}
-  .conteudo{margin-left:0;padding:1.1rem 1.1rem 5rem}
+  .conteudo{margin-left:0;padding:1.1rem 1.1rem 4rem}
 }
 .page-title{font-size:1.6rem;margin-bottom:.3rem;color:var(--laranja-6)}
 .page-sub{color:var(--texto-suave);margin-bottom:1.6rem}
@@ -190,7 +190,8 @@ tr:hover td{background:var(--laranja-1)}
 .rodape-dev.centro{left:0}
 
 @media (max-width:760px){
-  .rodape-dev{left:0}
+  .rodape-dev{left:0;font-size:.8rem;padding:.5rem .8rem;white-space:nowrap}
+  .rodape-dev .rd-full{display:none}
 }
 .rodape-dev strong{color:var(--laranja-6)}
 .rodape-dev a{color:var(--laranja-6);text-decoration:none;font-weight:600;white-space:nowrap}

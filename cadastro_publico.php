@@ -113,7 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="theme-color" content="#e8843f">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="icon" href="assets/icons/favicon.png" type="image/png">
-<link rel="stylesheet" href="assets/css/style.css?v=10">
+<link rel="stylesheet" href="assets/css/style.css?v=12">
 </head>
 <body>
 <div class="login-wrap" style="align-items:flex-start;padding-top:3rem">
@@ -176,8 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
 </div>
 <footer class="rodape-dev centro">
-  Desenvolvedor <strong>Marielton M Santos</strong>
-  · WhatsApp
+  <span class="rd-full">Desenvolvedor </span><strong>Marielton M Santos</strong><span class="rd-full"> · WhatsApp</span>
   <a href="https://wa.me/5561999116077" target="_blank" rel="noopener">(61) 99911-6077</a>
 </footer>
 <script>
