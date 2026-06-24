@@ -130,7 +130,25 @@ tr:hover td{background:var(--laranja-1)}
 .flash{padding:.9rem 1.1rem;border-radius:12px;margin-bottom:1.2rem;font-size:.92rem}
 .flash.sucesso{background:#dff3e3;color:#3c7b4c;border:1px solid #bfe3c8}
 .flash.erro{background:#fbe1e1;color:#a83b3b;border:1px solid #f3c6c6}
-.flash.aviso{background:#fff3e0;color:#9a5a12;border:1px solid #ffd9a8}
+.flash.aviso{
+  background:linear-gradient(135deg,#ff7a00,#ff9d2e);
+  color:#fff;
+  border:none;
+  box-shadow:0 6px 20px rgba(255,122,0,.45);
+  font-weight:600;
+  animation:pulso-alerta 2s ease-in-out infinite;
+}
+.flash.aviso .btn{
+  background:rgba(255,255,255,.95);
+  color:#c25000;
+  border:none;
+  font-weight:700;
+}
+.flash.aviso .btn:hover{background:#fff}
+@keyframes pulso-alerta{
+  0%,100%{box-shadow:0 6px 20px rgba(255,122,0,.45)}
+  50%{box-shadow:0 6px 28px rgba(255,122,0,.75)}
+}
 
 /* ---------- Login ---------- */
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:.8rem;
