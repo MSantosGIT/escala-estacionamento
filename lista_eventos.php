@@ -86,11 +86,24 @@ require __DIR__ . '/includes/header.php';
       </div>
     </div>
     <?php if ($equipe): ?>
-    <ul class="ev-equipe">
-      <?php foreach ($equipe as $p): ?>
-        <li class="nivel-<?= e($p['nivel_na_escala']) ?>"><?= e($p['nome']) ?></li>
-      <?php endforeach; ?>
-    </ul>
+    <div class="ev-corpo-baixo">
+      <ul class="ev-equipe">
+        <?php foreach ($equipe as $p): ?>
+          <li class="nivel-<?= e($p['nivel_na_escala']) ?>"><?= e($p['nome']) ?></li>
+        <?php endforeach; ?>
+      </ul>
+      <span class="ev-colete" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+          <path d="M20 10 L32 16 L44 10 L52 16 L48 56 L16 56 L12 16 Z" fill="#f47b20" stroke="#d9641a" stroke-width="1.5"/>
+          <path d="M32 16 L30 56 M32 16 L34 56" stroke="#d9641a" stroke-width="1.2" fill="none"/>
+          <path d="M20 10 L26 22 M44 10 L38 22" stroke="#d9641a" stroke-width="1.2" fill="none"/>
+          <rect x="14" y="30" width="36" height="4" fill="#ffe000" stroke="#e6c200" stroke-width="0.5"/>
+          <rect x="14" y="42" width="36" height="4" fill="#ffe000" stroke="#e6c200" stroke-width="0.5"/>
+          <rect x="22" y="22" width="3.5" height="32" fill="#ffe000" stroke="#e6c200" stroke-width="0.4"/>
+          <rect x="38.5" y="22" width="3.5" height="32" fill="#ffe000" stroke="#e6c200" stroke-width="0.4"/>
+        </svg>
+      </span>
+    </div>
     <?php endif; ?>
   </div>
   <?php endforeach; ?>
@@ -122,11 +135,16 @@ require __DIR__ . '/includes/header.php';
 .ev-horario{font-size:.85rem;color:var(--texto-suave)}
 
 .ev-equipe{list-style:none;padding:0;margin:.6rem 0 0;
-  border-top:1px solid var(--laranja-3);padding-top:.55rem}
+  border-top:1px solid var(--laranja-3);padding-top:.55rem;flex:1}
 .ev-equipe li{font-size:.92rem;padding:.18rem 0;font-weight:600}
 .nivel-lider{color:#9a4f12}
 .nivel-pleno{color:#1f6b86}
 .nivel-junior{color:#2f7d49}
+
+/* colete de apoio ao lado da lista */
+.ev-corpo-baixo{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+.ev-colete{width:55px;height:55px;flex:0 0 auto;opacity:.95;align-self:center}
+.ev-colete svg{width:100%;height:100%;display:block}
 
 /* impressão A4 */
 .cabecalho-impressao{display:none;text-align:center;margin-bottom:1rem}
