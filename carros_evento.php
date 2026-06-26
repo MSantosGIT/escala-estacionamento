@@ -4,6 +4,19 @@ exigirLogin();
 $pdo = db();
 $ehAdm = ehAdmin();
 
+// ---- excluir registro (só admin) ----
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['op'] ?? '') === 'excluir') {
+    validarCSRF();
+    if (ehAdmin()) {
+        $eid = (int)($_POST['escala_id'] ?? 0);
+        if ($eid) {
+            $pdo->prepare("DELETE FROM carros_evento WHERE escala_id = ?")->execute([$eid]);
+            flash('Registro excluído.');
+        }
+    }
+    redirect('carros_evento.php');
+}
+
 // ---- salvar/atualizar registro ----
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     validarCSRF();
@@ -46,6 +59,18 @@ $eventos = $pdo->query(
    FROM escalas ORDER BY data_evento DESC, horario_chegada"
 )->fetchAll();
 
+// ---- registro selecionado para edição (admin) ----
+$editar = null;
+if ($ehAdm && isset($_GET['editar'])) {
+    $st = $pdo->prepare(
+      "SELECT ce.*, e.evento, e.data_evento
+       FROM carros_evento ce JOIN escalas e ON e.id = ce.escala_id
+       WHERE ce.escala_id = ?"
+    );
+    $st->execute([(int)$_GET['editar']]);
+    $editar = $st->fetch();
+}
+
 // ---- registros existentes (com filtro de período) ----
 $registros = $pdo->query(
   "SELECT ce.id, ce.escala_id,
@@ -84,8 +109,8 @@ require __DIR__ . '/includes/header.php';
 <h1 class="page-title">Carros por evento</h1>
 <p class="page-sub">Registre a movimentação de veículos em cada evento.</p>
 
-<div class="card">
-  <h2>Registrar movimento</h2>
+<div class="card" id="form-registro">
+  <h2><?= $editar ? 'Editar registro' : 'Registrar movimento' ?></h2>
   <form method="post">
     <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
     <div style="margin-bottom:1rem">
@@ -93,7 +118,7 @@ require __DIR__ . '/includes/header.php';
       <select name="escala_id" required>
         <option value="">— selecione —</option>
         <?php foreach ($eventos as $ev): ?>
-          <option value="<?= $ev['id'] ?>">
+          <option value="<?= $ev['id'] ?>" <?= ($editar && $editar['escala_id']==$ev['id']) ? 'selected' : '' ?>>
             <?= date('d/m/Y', strtotime($ev['data_evento'])) ?> — <?= e($ev['evento']) ?>
           </option>
         <?php endforeach; ?>
@@ -101,20 +126,25 @@ require __DIR__ . '/includes/header.php';
     </div>
     <div class="form-row">
       <div><label>Qtde no estacionamento</label>
-        <input type="number" name="qtd_estacionamento" class="campo-qtd" min="0" value="0" required></div>
+        <input type="number" name="qtd_estacionamento" class="campo-qtd" min="0" value="<?= (int)($editar['qtd_estacionamento'] ?? 0) ?>" required></div>
       <div><label>Qtde em anexo</label>
-        <input type="number" name="qtd_anexo" class="campo-qtd" min="0" value="0" required></div>
+        <input type="number" name="qtd_anexo" class="campo-qtd" min="0" value="<?= (int)($editar['qtd_anexo'] ?? 0) ?>" required></div>
       <div><label>Qtde externo</label>
-        <input type="number" name="qtd_externo" class="campo-qtd" min="0" value="0" required></div>
+        <input type="number" name="qtd_externo" class="campo-qtd" min="0" value="<?= (int)($editar['qtd_externo'] ?? 0) ?>" required></div>
     </div>
     <div class="total-veic">
       Total de veículos: <span id="totalVeic">0</span>
     </div>
-    <button class="btn" style="margin-top:.8rem">Salvar registro</button>
+    <button class="btn" style="margin-top:.8rem"><?= $editar ? 'Salvar alterações' : 'Salvar registro' ?></button>
+    <?php if ($editar): ?>
+      <a href="carros_evento.php" class="btn sec" style="margin-top:.8rem">Cancelar</a>
+    <?php endif; ?>
   </form>
+  <?php if (!$editar): ?>
   <p class="muted" style="margin-top:.6rem;font-size:.85rem">
     Se o evento já tiver um registro, ele será atualizado.
   </p>
+  <?php endif; ?>
 </div>
 
 <script>
@@ -182,6 +212,7 @@ calcTotal();
       <th>Data</th><th>Evento</th>
       <th class="right">Estac.</th><th class="right">Anexo</th><th class="right">Externo</th>
       <th class="right">Total</th>
+      <?php if ($ehAdm): ?><th></th><?php endif; ?>
     </tr></thead>
     <tbody>
       <?php foreach ($registros as $r): ?>
@@ -192,6 +223,17 @@ calcTotal();
         <td class="right"><?= number_format((int)$r['qtd_anexo'],0,',','.') ?></td>
         <td class="right"><?= number_format((int)$r['qtd_externo'],0,',','.') ?></td>
         <td class="right car-badge"><?= number_format((int)$r['total_veic'],0,',','.') ?></td>
+        <?php if ($ehAdm): ?>
+        <td class="right" style="white-space:nowrap">
+          <a class="btn sm sec" href="carros_evento.php?editar=<?= (int)$r['escala_id'] ?>#form-registro" title="Editar">✏️</a>
+          <form method="post" style="display:inline" onsubmit="return confirm('Excluir este registro?')">
+            <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
+            <input type="hidden" name="op" value="excluir">
+            <input type="hidden" name="escala_id" value="<?= (int)$r['escala_id'] ?>">
+            <button class="btn sm sec" title="Excluir">🗑️</button>
+          </form>
+        </td>
+        <?php endif; ?>
       </tr>
       <?php endforeach; ?>
     </tbody>
