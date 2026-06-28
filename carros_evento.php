@@ -96,8 +96,8 @@ foreach ($registros as $r) {
 }
 $media = $qtdEv ? round($total / $qtdEv) : 0;
 
-// dados do gráfico (ordem cronológica crescente, até 12 últimos)
-$grafico = array_reverse(array_slice($registros, 0, 12));
+// dados do gráfico: mais recente à esquerda (registros já vêm em ordem decrescente)
+$grafico = array_slice($registros, 0, 12);
 $maxGraf = 1;
 foreach ($grafico as $g) if ((int)$g['total_veic'] > $maxGraf) $maxGraf = (int)$g['total_veic'];
 
@@ -109,7 +109,13 @@ require __DIR__ . '/includes/header.php';
 <h1 class="page-title">Carros por evento</h1>
 <p class="page-sub">Registre a movimentação de veículos em cada evento.</p>
 
-<div class="card" id="form-registro">
+<div class="acoes-topo">
+  <button type="button" class="btn-toggle <?= $editar?'ativo':'' ?>" data-alvo="form-registro">
+    <?= $editar ? '✏️ Editar registro' : '➕ Registrar movimento' ?>
+  </button>
+</div>
+
+<div class="card card-recolhivel <?= $editar?'aberto':'' ?>" id="form-registro">
   <h2><?= $editar ? 'Editar registro' : 'Registrar movimento' ?></h2>
   <form method="post">
     <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">

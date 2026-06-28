@@ -77,6 +77,33 @@ $colabs = $pdo->query(
    ORDER BY FIELD(nivel,'lider','pleno','junior'), nome"
 )->fetchAll();
 
+// ---- histórico de alertas enviados (ordem decrescente) ----
+$alertasEnviados = $pdo->query(
+  "SELECT a.id, a.mensagem, a.criado_em,
+          COUNT(d.id) AS total_dest,
+          SUM(d.visto_em IS NOT NULL) AS total_vistos
+   FROM alertas a
+   LEFT JOIN alertas_destinatarios d ON d.alerta_id = a.id
+   GROUP BY a.id
+   ORDER BY a.criado_em DESC"
+)->fetchAll();
+
+// destinatários de cada alerta (nome + status), agrupados
+$destPorAlerta = [];
+if ($alertasEnviados) {
+    $ids = implode(',', array_map(fn($a) => (int)$a['id'], $alertasEnviados));
+    $rowsDest = $pdo->query(
+      "SELECT d.alerta_id, u.nome, u.tipo, d.visto_em
+       FROM alertas_destinatarios d
+       JOIN usuarios u ON u.id = d.usuario_id
+       WHERE d.alerta_id IN ($ids)
+       ORDER BY (d.visto_em IS NULL), u.nome"
+    )->fetchAll();
+    foreach ($rowsDest as $rd) {
+        $destPorAlerta[$rd['alerta_id']][] = $rd;
+    }
+}
+
 $titulo = 'Enviar alerta';
 require __DIR__ . '/includes/header.php';
 ?>
@@ -120,6 +147,52 @@ require __DIR__ . '/includes/header.php';
   </form>
 </div>
 
+<?php if ($alertasEnviados): ?>
+<h2 style="color:var(--laranja-6);margin:1.5rem 0 .8rem">Histórico de alertas</h2>
+<div class="hist-alertas">
+  <?php foreach ($alertasEnviados as $i => $a):
+    $dests = $destPorAlerta[$a['id']] ?? [];
+    $vistos = (int)$a['total_vistos'];
+    $totalD = (int)$a['total_dest'];
+    $aberto = ($i === 0); // o mais recente começa expandido
+  ?>
+  <div class="alerta-hist <?= $aberto?'aberto':'' ?>">
+    <button type="button" class="alerta-cab" onclick="toggleAlerta(this)">
+      <div class="alerta-cab-txt">
+        <span class="alerta-msg">📢 <?= e($a['mensagem']) ?></span>
+        <span class="alerta-meta">
+          <?= date('d/m/Y H:i', strtotime($a['criado_em'])) ?>
+          · <?= $vistos ?>/<?= $totalD ?> leram
+        </span>
+      </div>
+      <span class="alerta-seta">▾</span>
+    </button>
+    <div class="alerta-corpo">
+      <?php if (!$dests): ?>
+        <p class="muted" style="padding:.5rem 0">Sem destinatários.</p>
+      <?php else: ?>
+      <ul class="dest-lista">
+        <?php foreach ($dests as $d): ?>
+        <li>
+          <?php if ($d['visto_em']): ?>
+            <span class="dest-status lido">✓ lido</span>
+          <?php else: ?>
+            <span class="dest-status nao">⏳ não lido</span>
+          <?php endif; ?>
+          <span class="dest-nome"><?= e($d['nome']) ?><?php if($d['tipo']==='administrador'):?> <span class="badge lider">admin</span><?php endif;?></span>
+          <?php if ($d['visto_em']): ?>
+            <span class="dest-quando"><?= date('d/m H:i', strtotime($d['visto_em'])) ?></span>
+          <?php endif; ?>
+        </li>
+        <?php endforeach; ?>
+      </ul>
+      <?php endif; ?>
+    </div>
+  </div>
+  <?php endforeach; ?>
+</div>
+<?php endif; ?>
+
 <style>
 .opcoes-destino{display:flex;flex-direction:column;gap:.6rem;margin:.4rem 0 .9rem}
 .opt{display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:500;line-height:1.2}
@@ -129,6 +202,29 @@ require __DIR__ . '/includes/header.php';
   border-radius:10px;margin-bottom:1.2rem}
 .check-colab{display:flex;align-items:center;gap:.5rem;padding:.35rem 0;cursor:pointer}
 .check-colab input{width:auto}
+
+/* histórico de alertas */
+.hist-alertas{display:flex;flex-direction:column;gap:.7rem;max-width:680px}
+.alerta-hist{background:#fff;border:1px solid var(--borda);border-radius:12px;overflow:hidden}
+.alerta-cab{width:100%;background:none;border:none;cursor:pointer;display:flex;
+  align-items:center;justify-content:space-between;gap:.6rem;padding:.9rem 1rem;text-align:left}
+.alerta-cab:hover{background:var(--laranja-1)}
+.alerta-cab-txt{display:flex;flex-direction:column;gap:.2rem;flex:1}
+.alerta-msg{font-weight:700;color:var(--laranja-6);font-size:.98rem}
+.alerta-meta{font-size:.8rem;color:var(--texto-suave)}
+.alerta-seta{color:var(--laranja-5);font-size:1.1rem;transition:transform .2s;flex:0 0 auto}
+.alerta-hist.aberto .alerta-seta{transform:rotate(180deg)}
+.alerta-corpo{display:none;padding:0 1rem 1rem;border-top:1px solid var(--borda)}
+.alerta-hist.aberto .alerta-corpo{display:block}
+.dest-lista{list-style:none;padding:0;margin:.6rem 0 0}
+.dest-lista li{display:flex;align-items:center;gap:.6rem;padding:.35rem 0;font-size:.9rem;
+  border-bottom:1px dashed var(--borda)}
+.dest-lista li:last-child{border-bottom:none}
+.dest-status{font-weight:700;font-size:.78rem;padding:.1rem .5rem;border-radius:12px;flex:0 0 auto;min-width:74px;text-align:center}
+.dest-status.lido{background:#dff3e3;color:#2f7d49}
+.dest-status.nao{background:#fff3e0;color:#9a5a12}
+.dest-nome{flex:1;color:#444}
+.dest-quando{font-size:.78rem;color:var(--texto-suave);white-space:nowrap}
 </style>
 
 <script>
@@ -142,6 +238,9 @@ function toggleLista(){
 }
 function marcarTodos(valor){
   document.querySelectorAll('#listaColabs input[type=checkbox]').forEach(c => c.checked = valor);
+}
+function toggleAlerta(btn){
+  btn.closest('.alerta-hist').classList.toggle('aberto');
 }
 </script>
 
