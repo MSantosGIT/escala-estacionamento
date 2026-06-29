@@ -161,10 +161,22 @@ function calcTotal(){
 }
 document.querySelectorAll('.campo-qtd').forEach(c => c.addEventListener('input', calcTotal));
 calcTotal();
+
+function toggleStats(){
+  const painel = document.getElementById('painel-stats');
+  const btn = document.getElementById('btnStats');
+  const aberto = painel.classList.toggle('aberto');
+  btn.classList.toggle('ativo', aberto);
+}
 </script>
 
 <?php if ($ehAdm): ?>
-<div class="flex-between" style="margin:1.2rem 0 .6rem;flex-wrap:wrap;gap:.6rem">
+<div class="acoes-topo" style="margin-top:1.2rem">
+  <button type="button" class="btn-toggle" id="btnStats" onclick="toggleStats()">📊 Ver estatísticas e comparativo</button>
+</div>
+
+<div class="card-recolhivel" id="painel-stats">
+<div class="flex-between" style="margin:.4rem 0 .6rem;flex-wrap:wrap;gap:.6rem">
   <h2 style="margin:0;color:var(--laranja-6)">Estatísticas</h2>
   <form method="get">
     <select name="periodo" onchange="this.form.submit()">
@@ -206,6 +218,7 @@ calcTotal();
   </div>
 </div>
 <?php endif; ?>
+</div><!-- /painel-stats -->
 <?php endif; /* fim só-admin */ ?>
 
 <div class="card" style="margin-top:1.2rem">
