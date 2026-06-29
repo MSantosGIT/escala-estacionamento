@@ -110,9 +110,12 @@ require __DIR__ . '/includes/header.php';
 <p class="page-sub">Registre a movimentação de veículos em cada evento.</p>
 
 <div class="acoes-topo">
-  <button type="button" class="btn-toggle <?= $editar?'ativo':'' ?>" data-alvo="form-registro">
+  <button type="button" class="btn-toggle <?= $editar?'ativo':'' ?>" id="btnForm" onclick="toggleForm()">
     <?= $editar ? '✏️ Editar registro' : '➕ Registrar movimento' ?>
   </button>
+  <?php if ($ehAdm): ?>
+  <button type="button" class="btn-toggle" id="btnStats" onclick="toggleStats()">📊 Estatísticas e comparativo</button>
+  <?php endif; ?>
 </div>
 
 <div class="card card-recolhivel <?= $editar?'aberto':'' ?>" id="form-registro">
@@ -168,13 +171,15 @@ function toggleStats(){
   const aberto = painel.classList.toggle('aberto');
   btn.classList.toggle('ativo', aberto);
 }
+function toggleForm(){
+  const painel = document.getElementById('form-registro');
+  const btn = document.getElementById('btnForm');
+  const aberto = painel.classList.toggle('aberto');
+  btn.classList.toggle('ativo', aberto);
+}
 </script>
 
 <?php if ($ehAdm): ?>
-<div class="acoes-topo" style="margin-top:1.2rem">
-  <button type="button" class="btn-toggle" id="btnStats" onclick="toggleStats()">📊 Ver estatísticas e comparativo</button>
-</div>
-
 <div class="card-recolhivel" id="painel-stats">
 <div class="flex-between" style="margin:.4rem 0 .6rem;flex-wrap:wrap;gap:.6rem">
   <h2 style="margin:0;color:var(--laranja-6)">Estatísticas</h2>
