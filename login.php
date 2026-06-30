@@ -30,6 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'tipo' => $user['tipo'],
                 'colaborador_id' => $user['colaborador_id'],
             ];
+            // marca o início da contagem de inatividade
+            $_SESSION['ultima_atividade'] = time();
             // registra a data/hora deste acesso
             db()->prepare("UPDATE usuarios SET ultimo_acesso = NOW() WHERE id = ?")
                 ->execute([$user['id']]);
