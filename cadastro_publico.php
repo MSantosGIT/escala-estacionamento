@@ -22,7 +22,7 @@ $old     = ['marca'=>'','modelo'=>'','cor'=>'','placa'=>'','proprietario'=>'','c
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // 1) CSRF
-    if (($_POST['csrf'] ?? '') !== ($_SESSION['pub_csrf'] ?? '')) {
+    if (!hash_equals($_SESSION['pub_csrf'] ?? '', $_POST['csrf'] ?? '')) {
         $erros[] = 'Sessão expirada. Recarregue a página e tente novamente.';
     }
     // 2) honeypot (campo oculto que humanos não preenchem)

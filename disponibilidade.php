@@ -45,7 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $meuColabId && $prazo) {
         flash('Indisponibilidade registrada. Obrigado!');
     } catch (Throwable $ex) {
         $pdo->rollBack();
-        flash('Erro ao salvar: ' . $ex->getMessage(), 'erro');
+        error_log('Erro ao salvar disponibilidade: ' . $ex->getMessage());
+        flash('Erro ao salvar. Tente novamente.', 'erro');
     }
     redirect('disponibilidade.php');
 }

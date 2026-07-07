@@ -4,6 +4,13 @@
 // ============================================================
 require_once __DIR__ . '/../config/db.php';
 
+// ---- Headers de segurança HTTP (aplicados a todas as telas) ----
+if (!headers_sent()) {
+    header('X-Frame-Options: SAMEORIGIN');        // bloqueia clickjacking
+    header('X-Content-Type-Options: nosniff');    // impede MIME sniffing
+    header('Referrer-Policy: same-origin');       // não vaza URLs a sites externos
+}
+
 // Tempo máximo de inatividade antes de exigir novo login (segundos)
 define('SESSAO_TIMEOUT', 30 * 60); // 30 minutos
 
@@ -119,7 +126,7 @@ function tokenCSRF(): string {
 }
 
 function validarCSRF(): void {
-    if (($_POST['csrf'] ?? '') !== ($_SESSION['csrf'] ?? '')) {
+    if (!hash_equals($_SESSION['csrf'] ?? '', $_POST['csrf'] ?? '')) {
         die('Falha na validação CSRF.');
     }
 }

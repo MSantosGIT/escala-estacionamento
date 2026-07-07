@@ -59,7 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['op'] ?? '') === 'salvar_or
         $pdo->commit();
     } catch (Throwable $ex) {
         $pdo->rollBack();
-        flash('Erro ao salvar a ordem: ' . $ex->getMessage(), 'erro');
+        error_log('Erro ao salvar ordem: ' . $ex->getMessage());
+        flash('Erro ao salvar a ordem. Tente novamente.', 'erro');
     }
     redirect("admin_escala.php?mes=$mes&ano=$ano");
 }
@@ -117,7 +118,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['op'] ?? '') === 'salvar_lo
         $pdo->commit();
     } catch (Throwable $ex) {
         $pdo->rollBack();
-        $erros[] = $ex->getMessage();
+        error_log('Erro na geração de escala: ' . $ex->getMessage());
+        $erros[] = 'Erro interno ao gerar a escala. Tente novamente.';
     }
 
     if ($erros) flash('Erro ao salvar: ' . implode('; ', $erros), 'erro');

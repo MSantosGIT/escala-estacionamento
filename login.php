@@ -4,8 +4,8 @@ if (logado()) redirect('dashboard.php');
 
 $erro = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // proteção CSRF
-    if (($_POST['csrf'] ?? '') !== ($_SESSION['csrf'] ?? '')) {
+    // proteção CSRF (hash_equals evita ataques de timing)
+    if (!hash_equals($_SESSION['csrf'] ?? '', $_POST['csrf'] ?? '')) {
         $erro = 'Sessão expirada. Recarregue a página e tente novamente.';
     }
 
