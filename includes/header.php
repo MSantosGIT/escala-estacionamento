@@ -45,6 +45,7 @@ if ('serviceWorker' in navigator) {
   <nav class="sb-nav">
     <?php
       navItem('dashboard.php', '🏠', 'Início', $pg);
+      navItem('checkin.php', '📍', 'Check-in', $pg);
       navItem('busca.php', '🔍', 'Buscar veículo', $pg);
       navItem('escalas.php', '📋', 'Escalas', $pg);
       navItem('calendario.php', '📅', 'Calendário', $pg);
@@ -67,6 +68,7 @@ if ('serviceWorker' in navigator) {
         navItem('usuarios.php', '👤', 'Usuários', $pg);
         navItem('acessos.php', '🕒', 'Acessos', $pg);
         navItem('enviar_alerta.php', '📢', 'Enviar alerta', $pg);
+        navItem('checklist_itens.php', '📋', 'Checklist', $pg);
       ?>
     <?php endif; ?>
   </nav>
