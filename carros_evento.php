@@ -23,6 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $escalaId = (int)($_POST['escala_id'] ?? 0);
     $qEst = max(0, (int)($_POST['qtd_estacionamento'] ?? 0));
     $qAnx = max(0, (int)($_POST['qtd_anexo'] ?? 0));
+    $qGra = max(0, (int)($_POST['qtd_gramado'] ?? 0));
     $qExt = max(0, (int)($_POST['qtd_externo'] ?? 0));
 
     if (!$escalaId) {
@@ -30,15 +31,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         // insere ou atualiza (UNIQUE em escala_id)
         $st = $pdo->prepare(
-          "INSERT INTO carros_evento (escala_id, qtd_estacionamento, qtd_anexo, qtd_externo, registrado_por)
-           VALUES (?, ?, ?, ?, ?)
+          "INSERT INTO carros_evento (escala_id, qtd_estacionamento, qtd_anexo, qtd_gramado, qtd_externo, registrado_por)
+           VALUES (?, ?, ?, ?, ?, ?)
            ON DUPLICATE KEY UPDATE
              qtd_estacionamento = VALUES(qtd_estacionamento),
              qtd_anexo = VALUES(qtd_anexo),
+             qtd_gramado = VALUES(qtd_gramado),
              qtd_externo = VALUES(qtd_externo),
              atualizado_em = NOW()"
         );
-        $st->execute([$escalaId, $qEst, $qAnx, $qExt, (int)(usuario()['id'] ?? 0)]);
+        $st->execute([$escalaId, $qEst, $qAnx, $qGra, $qExt, (int)(usuario()['id'] ?? 0)]);
         flash('Registro salvo com sucesso.');
     }
     redirect('carros_evento.php');
@@ -74,8 +76,8 @@ if ($ehAdm && isset($_GET['editar'])) {
 // ---- registros existentes (com filtro de período) ----
 $registros = $pdo->query(
   "SELECT ce.id, ce.escala_id,
-          ce.qtd_estacionamento, ce.qtd_anexo, ce.qtd_externo,
-          (ce.qtd_estacionamento + ce.qtd_anexo + ce.qtd_externo) AS total_veic,
+          ce.qtd_estacionamento, ce.qtd_anexo, ce.qtd_gramado, ce.qtd_externo,
+          (ce.qtd_estacionamento + ce.qtd_anexo + ce.qtd_gramado + ce.qtd_externo) AS total_veic,
           e.data_evento, e.evento, e.horario_chegada
    FROM carros_evento ce
    JOIN escalas e ON e.id = ce.escala_id
@@ -85,13 +87,9 @@ $registros = $pdo->query(
 
 // ---- estatísticas ----
 $total = 0; $maior = 0; $qtdEv = count($registros);
-$totEst = 0; $totAnx = 0; $totExt = 0;
 foreach ($registros as $r) {
     $tv = (int)$r['total_veic'];
     $total += $tv;
-    $totEst += (int)$r['qtd_estacionamento'];
-    $totAnx += (int)$r['qtd_anexo'];
-    $totExt += (int)$r['qtd_externo'];
     if ($tv > $maior) $maior = $tv;
 }
 $media = $qtdEv ? round($total / $qtdEv) : 0;
@@ -134,10 +132,12 @@ require __DIR__ . '/includes/header.php';
       </select>
     </div>
     <div class="form-row">
-      <div><label>Qtde no estacionamento</label>
+      <div><label>Qtde no principal</label>
         <input type="number" name="qtd_estacionamento" class="campo-qtd" min="0" value="<?= (int)($editar['qtd_estacionamento'] ?? 0) ?>" required></div>
       <div><label>Qtde em anexo</label>
         <input type="number" name="qtd_anexo" class="campo-qtd" min="0" value="<?= (int)($editar['qtd_anexo'] ?? 0) ?>" required></div>
+      <div><label>Qtde no gramado</label>
+        <input type="number" name="qtd_gramado" class="campo-qtd" min="0" value="<?= (int)($editar['qtd_gramado'] ?? 0) ?>" required></div>
       <div><label>Qtde externo</label>
         <input type="number" name="qtd_externo" class="campo-qtd" min="0" value="<?= (int)($editar['qtd_externo'] ?? 0) ?>" required></div>
     </div>
@@ -192,17 +192,10 @@ function toggleForm(){
   </form>
 </div>
 
-<div class="grid cols-4">
-  <div class="stat"><div class="n"><?= number_format($total,0,',','.') ?></div><div class="l">Total de veículos</div></div>
+<div class="grid cols-3">
   <div class="stat"><div class="n"><?= number_format($media,0,',','.') ?></div><div class="l">Média por evento</div></div>
   <div class="stat"><div class="n"><?= $qtdEv ?></div><div class="l">Eventos registrados</div></div>
   <div class="stat"><div class="n"><?= number_format($maior,0,',','.') ?></div><div class="l">Maior movimento</div></div>
-</div>
-
-<div class="grid cols-3" style="margin-top:.8rem">
-  <div class="stat"><div class="n"><?= number_format($totEst,0,',','.') ?></div><div class="l">No estacionamento</div></div>
-  <div class="stat"><div class="n"><?= number_format($totAnx,0,',','.') ?></div><div class="l">Em anexo</div></div>
-  <div class="stat"><div class="n"><?= number_format($totExt,0,',','.') ?></div><div class="l">Externo</div></div>
 </div>
 
 <?php if ($grafico): ?>
@@ -234,7 +227,7 @@ function toggleForm(){
   <table class="tbl-carros">
     <thead><tr>
       <th>Data</th><th>Evento</th>
-      <th class="right">Estac.</th><th class="right">Anexo</th><th class="right">Externo</th>
+      <th class="right">Principal</th><th class="right">Anexo</th><th class="right">Gramado</th><th class="right">Externo</th>
       <th class="right">Total</th>
       <?php if ($ehAdm): ?><th></th><?php endif; ?>
     </tr></thead>
@@ -245,6 +238,7 @@ function toggleForm(){
         <td><?= e($r['evento']) ?></td>
         <td class="right"><?= number_format((int)$r['qtd_estacionamento'],0,',','.') ?></td>
         <td class="right"><?= number_format((int)$r['qtd_anexo'],0,',','.') ?></td>
+        <td class="right"><?= number_format((int)$r['qtd_gramado'],0,',','.') ?></td>
         <td class="right"><?= number_format((int)$r['qtd_externo'],0,',','.') ?></td>
         <td class="right car-badge"><?= number_format((int)$r['total_veic'],0,',','.') ?></td>
         <?php if ($ehAdm): ?>
