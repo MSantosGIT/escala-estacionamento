@@ -126,6 +126,16 @@ function ajudaConteudo(): array {
             ],
         ],
 
+        'historico_disponibilidade.php' => [
+            'titulo' => '📆 Histórico de disponibilidade',
+            'intro'  => 'Consulte todos os registros de indisponibilidade, organizados de três formas diferentes.',
+            'passos' => [
+                'Use as abas no topo para trocar a visão: "Por mês" (agrupado pelo mês do evento), "Por evento" (quem marcou indisponibilidade em cada evento) e "Por colaborador" (histórico de cada pessoa — só para administradores).',
+                'Cada registro mostra o evento, a data e o horário exato em que a indisponibilidade foi marcada no sistema.',
+                'Como colaborador, você vê apenas os seus próprios registros; administradores veem os de toda a equipe.',
+            ],
+        ],
+
         'relatorio_anual.php' => [
             'titulo' => '📊 Relatório anual',
             'intro'  => 'Resumo consolidado da sua participação ao longo do ano.',

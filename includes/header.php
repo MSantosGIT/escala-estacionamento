@@ -56,6 +56,7 @@ if ('serviceWorker' in navigator) {
       navItem('trocas.php', '🔁', 'Trocas', $pg);
       navItem('historico_trocas.php', '📜', 'Histórico de trocas', $pg);
       navItem('disponibilidade.php', '✅', 'Disponibilidade', $pg);
+      navItem('historico_disponibilidade.php', '📆', 'Histórico disponibilidade', $pg);
       navItem('historico.php', '🕘', 'Histórico', $pg);
       navItem('relatorio_anual.php', '📊', 'Relatório anual', $pg);
       navItem('sobre.php', 'ℹ️', 'Sobre', $pg);
