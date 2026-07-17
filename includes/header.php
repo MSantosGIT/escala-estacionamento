@@ -9,15 +9,23 @@ function navItem($href, $icone, $rotulo, $pg) {
     $ativo = $pg === $href ? ' on' : '';
     echo '<a class="sb-link' . $ativo . '" href="' . $href . '"><span class="ic">' . $icone . '</span> ' . e($rotulo) . '</a>';
 }
-function navGroup($titulo, $icone, array $itens, $pg) {
+$GLOBALS['sbSubmenus'] = '';
+function navGroup($id, $titulo, $icone, array $itens, $pg) {
     $ativo = false;
     foreach ($itens as $it) { if ($it[0] === $pg) { $ativo = true; break; } }
-    echo '<details class="sb-grupo"' . ($ativo ? ' open' : '') . '>';
-    echo '<summary class="sb-grupo-tit' . ($ativo ? ' on' : '') . '"><span class="ic">' . $icone . '</span> '
-       . e($titulo) . '<span class="sb-seta">▾</span></summary>';
-    echo '<div class="sb-sub">';
+    echo '<button type="button" class="sb-grupo-tit' . ($ativo ? ' on' : '') . '" data-grupo="' . e($id) . '" onclick="abrirSubmenu(\'' . e($id) . '\', this)">'
+       . '<span class="ic">' . $icone . '</span> ' . e($titulo) . '<span class="sb-seta">❯</span></button>';
+
+    // o painel do submenu é FIXED e precisa ficar fora da <aside> (que usa transform
+    // no celular); acumulamos aqui e imprimimos depois de fechar a sidebar.
+    ob_start();
+    echo '<div class="sb-submenu" id="submenu-' . e($id) . '">';
+    echo '<div class="sb-sub-cab"><button type="button" class="sb-sub-voltar" onclick="fecharSubmenu()">‹</button>'
+       . '<span class="sb-sub-titulo"><span class="ic">' . $icone . '</span> ' . e($titulo) . '</span></div>';
+    echo '<div class="sb-sub-lista">';
     foreach ($itens as $it) { navItem($it[0], $it[1], $it[2], $pg); }
-    echo '</div></details>';
+    echo '</div></div>';
+    $GLOBALS['sbSubmenus'] .= ob_get_clean();
 }
 ?>
 <!DOCTYPE html>
@@ -33,7 +41,7 @@ function navGroup($titulo, $icone, array $itens, $pg) {
 <meta name="apple-mobile-web-app-title" content="Apoio Externo">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="icon" href="assets/icons/favicon.png" type="image/png">
-<link rel="stylesheet" href="assets/css/style.css?v=14">
+<link rel="stylesheet" href="assets/css/style.css?v=15">
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -60,24 +68,24 @@ if ('serviceWorker' in navigator) {
       navItem('checkin.php', '📍', 'Check-in', $pg);
       navItem('busca.php', '🔍', 'Buscar veículo', $pg);
 
-      navGroup('Escala', '📋', [
+      navGroup('escala', 'Escala', '📋', [
         ['escalas.php', '📋', 'Escalas'],
         ['calendario.php', '📅', 'Calendário'],
         ['lista_eventos.php', '🎫', 'Eventos'],
         ['carros_evento.php', '📈', 'Carros por evento'],
       ], $pg);
 
-      navGroup('Trocas', '🔁', [
+      navGroup('trocas', 'Trocas', '🔁', [
         ['trocas.php', '🔁', 'Solicitar / acompanhar'],
         ['historico_trocas.php', '📜', 'Histórico de trocas'],
       ], $pg);
 
-      navGroup('Disponibilidade', '✅', [
+      navGroup('disponibilidade', 'Disponibilidade', '✅', [
         ['disponibilidade.php', '✅', 'Minha disponibilidade'],
         ['historico_disponibilidade.php', '📆', 'Histórico'],
       ], $pg);
 
-      navGroup('Relatórios', '📊', [
+      navGroup('relatorios', 'Relatórios', '📊', [
         ['historico.php', '🕘', 'Histórico geral'],
         ['relatorio_anual.php', '📊', 'Relatório anual'],
       ], $pg);
@@ -88,13 +96,13 @@ if ('serviceWorker' in navigator) {
     ?>
       <div class="sb-sep">Administração</div>
       <?php
-        navGroup('Equipe', '👥', [
+        navGroup('equipe', 'Equipe', '👥', [
           ['colaboradores.php', '👥', 'Colaboradores'],
           ['usuarios.php', '👤', 'Usuários'],
           ['acessos.php', '🕒', 'Acessos'],
         ], $pg);
 
-        navGroup('Escala (Admin)', '🛠️', [
+        navGroup('escala-admin', 'Escala (Admin)', '🛠️', [
           ['admin_escala.php', '🛠️', 'Ajustar escala'],
           ['admin_indisponibilidade.php', '🚫', 'Indisponibilidade'],
           ['disponiveis.php', '🟢', 'Disponíveis'],
@@ -113,6 +121,9 @@ if ('serviceWorker' in navigator) {
     <a class="sb-sair" href="logout.php">↪ Sair</a>
   </div>
 </aside>
+
+<div class="sb-submenu-backdrop no-print" onclick="fecharSubmenu()"></div>
+<?= $GLOBALS['sbSubmenus'] ?>
 
 <?php if ($ajuda): ?>
 <button type="button" id="btnAjuda" class="no-print" title="Ajuda desta tela" onclick="abrirAjuda()">?</button>
@@ -278,7 +289,25 @@ function fecharAjuda(){
   if (ov) ov.classList.remove('aberto');
 }
 document.addEventListener('keydown', (ev) => {
-  if (ev.key === 'Escape') fecharAjuda();
+  if (ev.key === 'Escape') { fecharAjuda(); fecharSubmenu(); }
 });
+
+// submenu flutuante da sidebar (abre à direita do item clicado)
+function abrirSubmenu(id, btn){
+  const painel = document.getElementById('submenu-' + id);
+  if (!painel) return;
+  const jaAberto = painel.classList.contains('aberto');
+  fecharSubmenu();
+  if (!jaAberto) {
+    painel.classList.add('aberto');
+    if (btn) btn.classList.add('flyout-ativo');
+    document.body.classList.add('submenu-aberto');
+  }
+}
+function fecharSubmenu(){
+  document.querySelectorAll('.sb-submenu.aberto').forEach(p => p.classList.remove('aberto'));
+  document.querySelectorAll('.sb-grupo-tit.flyout-ativo').forEach(b => b.classList.remove('flyout-ativo'));
+  document.body.classList.remove('submenu-aberto');
+}
 </script>
 

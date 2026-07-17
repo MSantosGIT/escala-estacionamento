@@ -45,19 +45,39 @@ body{
 .sb-sep{margin:.7rem 1.1rem .2rem;padding-top:.6rem;border-top:1px solid rgba(255,255,255,.18);
   font-size:.66rem;text-transform:uppercase;letter-spacing:1px;opacity:.7}
 
-/* submenus recolhíveis (details/summary) */
-.sb-grupo{display:flex;flex-direction:column}
+/* botão de grupo (abre o submenu flutuante à direita) */
 .sb-grupo-tit{display:flex;align-items:center;gap:.7rem;padding:.7rem 1.1rem;color:#fff;
   font-size:.92rem;opacity:.92;border-left:3px solid transparent;cursor:pointer;
-  list-style:none;user-select:none}
-.sb-grupo-tit::-webkit-details-marker{display:none}
+  background:none;border-top:none;border-right:none;border-bottom:none;width:100%;
+  text-align:left;font-family:inherit;user-select:none}
 .sb-grupo-tit:hover{background:rgba(255,255,255,.12);opacity:1}
 .sb-grupo-tit.on{opacity:1;font-weight:600}
+.sb-grupo-tit.flyout-ativo{background:rgba(255,255,255,.2);border-left-color:#fff;opacity:1}
 .sb-grupo-tit .ic{width:18px;text-align:center;flex:0 0 auto}
-.sb-seta{margin-left:auto;font-size:.7rem;transition:transform .15s;flex:0 0 auto}
-.sb-grupo[open] .sb-seta{transform:rotate(180deg)}
-.sb-sub{display:flex;flex-direction:column;background:rgba(0,0,0,.1)}
-.sb-sub .sb-link{padding-left:2.4rem;font-size:.87rem}
+.sb-seta{margin-left:auto;font-size:.72rem;flex:0 0 auto;opacity:.85}
+
+/* painel flutuante que abre à direita da sidebar */
+.sb-submenu-backdrop{display:none;position:fixed;top:0;right:0;bottom:0;left:230px;z-index:95;background:transparent}
+body.submenu-aberto .sb-submenu-backdrop{display:block}
+.sb-submenu{
+  position:fixed; top:0; bottom:0; left:230px; width:250px; z-index:96;
+  background:#fff; box-shadow:6px 0 28px rgba(74,53,38,.22);
+  transform:translateX(-14px); opacity:0; pointer-events:none;
+  transition:transform .16s ease, opacity .16s ease;
+  display:flex; flex-direction:column; padding:.5rem 0;
+}
+.sb-submenu.aberto{transform:translateX(0); opacity:1; pointer-events:auto}
+.sb-sub-cab{display:flex;align-items:center;gap:.6rem;padding:.5rem .9rem .8rem;
+  border-bottom:1px solid var(--borda);margin-bottom:.4rem}
+.sb-sub-voltar{display:none;background:var(--laranja-1);border:1px solid var(--borda);
+  border-radius:50%;width:30px;height:30px;color:var(--laranja-6);font-size:1.1rem;cursor:pointer;flex:0 0 auto}
+.sb-sub-titulo{font-weight:800;color:var(--laranja-6);font-size:1rem;display:flex;align-items:center;gap:.5rem}
+.sb-sub-lista{display:flex;flex-direction:column;overflow-y:auto}
+.sb-sub-lista .sb-link{color:var(--texto);border-left:3px solid transparent}
+.sb-sub-lista .sb-link:hover{background:var(--laranja-1)}
+.sb-sub-lista .sb-link.on{background:var(--laranja-1);color:var(--laranja-6);
+  border-left-color:var(--laranja-5)}
+
 .sb-user{margin-top:auto;padding:1rem 1.1rem 0;border-top:1px solid rgba(255,255,255,.2)}
 .sb-user-nome{font-weight:600;font-size:.9rem}
 .sb-user-tipo{font-size:.78rem;opacity:.85;margin-bottom:.5rem}
@@ -83,6 +103,13 @@ body{
   body.nav-aberta .shade{display:block}
   .mobtop{display:flex}
   .conteudo{margin-left:0;padding:1.1rem 1.1rem 4rem}
+
+  /* no celular, o submenu ocupa a tela toda e desliza da direita */
+  .sb-submenu{left:0;right:0;width:auto;top:0;bottom:0;transform:translateX(100%);
+    box-shadow:none;z-index:97}
+  .sb-submenu.aberto{transform:translateX(0)}
+  .sb-sub-voltar{display:flex;align-items:center;justify-content:center}
+  .sb-submenu-backdrop{display:none !important}
 }
 .page-title{font-size:1.6rem;margin-bottom:.3rem;color:var(--laranja-6)}
 .page-sub{color:var(--texto-suave);margin-bottom:1.6rem}
