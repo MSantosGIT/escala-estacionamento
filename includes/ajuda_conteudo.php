@@ -27,7 +27,7 @@ function ajudaConteudo(): array {
                 'Dentro da janela de horário, toque em "Confirmar minha chegada" — o sistema grava a hora exata.',
                 'Acompanhe quem da equipe já chegou (✓ com horário) e quem ainda não (—).',
                 'Colaborador principal (primeiro da escala): pode enviar até 3 fotos do evento direto pela câmera do celular.',
-                'O líder preenche o checklist de encerramento (portões, cones, rádios, coletes) ao final e pode deixar uma observação. Depois de encerrado, o registro não pode mais ser alterado.',
+                'O colaborador principal preenche o checklist de encerramento (portões, cones, rádios, coletes) ao final e pode deixar uma observação. Depois de encerrado, o registro não pode mais ser alterado.',
             ],
             'dica' => 'O encerramento do evento é definitivo — confira tudo antes de confirmar.',
         ],
@@ -49,7 +49,7 @@ function ajudaConteudo(): array {
             'intro'  => 'Veja a escala mensal completa: quem está escalado em cada evento.',
             'passos' => [
                 'Use as setas ou o seletor de mês/ano para navegar entre os períodos.',
-                'Cada evento mostra a equipe escalada, com os nomes coloridos por nível (líder, pleno, júnior).',
+                'Cada evento mostra a equipe escalada completa.',
                 'Localize os dias em que você está escalado para se programar com antecedência.',
             ],
         ],
@@ -68,7 +68,7 @@ function ajudaConteudo(): array {
             'intro'  => 'Cada evento vira um "ticket" visual, com data, horário e a equipe escalada.',
             'passos' => [
                 'Escolha o mês/ano para ver os tickets dos eventos daquele período.',
-                'Os nomes da equipe aparecem coloridos por nível — fácil identificar quem é líder, pleno ou júnior.',
+                'Os nomes da equipe escalada aparecem organizados por ordem de prioridade.',
                 'Toque em "Imprimir" para gerar uma versão limpa em papel, sem os menus do sistema.',
             ],
         ],
@@ -170,9 +170,9 @@ function ajudaConteudo(): array {
             'titulo' => '👥 Colaboradores (Admin)',
             'intro'  => 'Gerencie o cadastro da equipe de apoio.',
             'passos' => [
-                'Toque em "➕ Novo colaborador" para cadastrar, informando nome, nível e celular.',
+                'Toque em "➕ Novo colaborador" para cadastrar, informando nome e celular.',
                 'Use ✏️ para editar um colaborador existente ou 🗑️ para inativar.',
-                'O nível (líder, pleno, júnior) define a cor do nome nas escalas e a ordem de prioridade.',
+                'O nível define a ordem de prioridade nas escalas.',
             ],
         ],
 
@@ -181,7 +181,7 @@ function ajudaConteudo(): array {
             'intro'  => 'Gere e ajuste manualmente a escala do mês.',
             'passos' => [
                 'Escolha o mês/ano e toque em "Gerar escala" para a distribuição automática.',
-                'Arraste para reordenar quem aparece primeiro (define o colaborador principal/líder do evento).',
+                'Arraste para reordenar quem aparece primeiro (define o colaborador principal do evento).',
                 'Ajustes manuais substituem a geração automática apenas para os eventos alterados.',
             ],
         ],
@@ -193,6 +193,18 @@ function ajudaConteudo(): array {
                 'Consulte quem está indisponível em cada data antes de gerar a escala.',
                 'Você pode remover uma indisponibilidade em nome do colaborador, se necessário.',
             ],
+        ],
+
+        'disponiveis.php' => [
+            'titulo' => '🟢 Disponíveis para escalar',
+            'intro'  => 'Veja, evento por evento, quais colaboradores estão livres para serem escalados (quem não marcou indisponibilidade).',
+            'passos' => [
+                'Use as setas para navegar entre os meses.',
+                'Cada evento aparece como um ticket, com a quantidade total de disponíveis e a contagem por nível (A1, A2, A3).',
+                'A lista de nomes dentro do ticket mostra exatamente quem está livre para aquele evento específico.',
+                'O resumo no topo mostra o total de colaboradores ativos em cada nível, para referência.',
+            ],
+            'dica' => 'Use esta tela antes de gerar ou ajustar a escala, para saber quantas opções você tem em cada nível.',
         ],
 
         'veiculos.php' => [

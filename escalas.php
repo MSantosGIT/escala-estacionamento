@@ -69,28 +69,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ehAdmin()) {
 
     if ($op === 'editar') {
         $eid       = (int)$_POST['escala_id'];
+        $nomeNovo  = trim($_POST['evento'] ?? '');
         $dataNova  = $_POST['data_evento'] ?? '';
         $horaNova  = $_POST['horario_chegada'] ?? '';
+        $qtdNova   = (int)($_POST['num_colaboradores'] ?? 1);
+        $exigeNovo = isset($_POST['exige_lider']) ? 1 : 0;
+        $statusNovo = ($_POST['status'] ?? 'aberta') === 'preenchida' ? 'preenchida' : 'aberta';
         $dt        = DateTime::createFromFormat('Y-m-d', $dataNova);
-        if (!$eid || !$dt || !preg_match('/^\d{2}:\d{2}/', $horaNova)) {
+
+        if ($nomeNovo === '' || mb_strlen($nomeNovo) > 150) {
+            flash('Informe o nome do evento (até 150 caracteres).', 'erro');
+        } elseif (!$eid || !$dt || !preg_match('/^\d{2}:\d{2}/', $horaNova)) {
             flash('Data ou horário inválido.', 'erro');
+        } elseif ($qtdNova < 1 || $qtdNova > 20) {
+            flash('Quantidade de colaboradores inválida.', 'erro');
         } else {
-            $pdo->prepare(
-                "UPDATE escalas
-                 SET data_evento=?, dia=?, mes=?, ano=?, horario_chegada=?
-                 WHERE id=?"
-            )->execute([
-                $dt->format('Y-m-d'),
-                (int)$dt->format('d'),
-                (int)$dt->format('m'),
-                (int)$dt->format('Y'),
-                $horaNova,
-                $eid,
-            ]);
+            try {
+                $pdo->prepare(
+                    "UPDATE escalas
+                     SET evento=?, data_evento=?, dia=?, mes=?, ano=?, horario_chegada=?,
+                         num_colaboradores=?, exige_lider=?, status=?
+                     WHERE id=?"
+                )->execute([
+                    $nomeNovo,
+                    $dt->format('Y-m-d'),
+                    (int)$dt->format('d'),
+                    (int)$dt->format('m'),
+                    (int)$dt->format('Y'),
+                    $horaNova,
+                    $qtdNova,
+                    $exigeNovo,
+                    $statusNovo,
+                    $eid,
+                ]);
+                flash('Evento atualizado com sucesso.');
+            } catch (PDOException $ex) {
+                if ($ex->getCode() === '23000') {
+                    flash('Já existe um evento com esse nome nessa data.', 'erro');
+                } else {
+                    error_log('Erro ao editar evento: ' . $ex->getMessage());
+                    flash('Erro ao salvar as alterações. Tente novamente.', 'erro');
+                }
+            }
             // ajusta o redirect para o mês/ano do novo evento, se mudou
             $telaMes = (int)$dt->format('m');
             $telaAno = (int)$dt->format('Y');
-            flash('Data/horário do evento atualizados. Colaboradores mantidos.');
         }
     }
     // preserva o mês/ano que estava em tela ao recarregar
@@ -240,21 +263,53 @@ require __DIR__ . '/includes/header.php';
             <button class="btn sm danger">×</button>
           </form>
 
-          <!-- Modal de editar (data e horário) -->
+          <!-- Modal de editar (todos os campos do evento) -->
           <dialog id="dlg-ev-<?= $es['id'] ?>" class="dlg-editar">
             <form method="post">
-              <h3 style="color:var(--laranja-6);margin-bottom:.4rem">Editar evento</h3>
-              <p class="muted" style="margin-bottom:.8rem"><?= e($es['evento']) ?></p>
+              <h3 style="color:var(--laranja-6);margin-bottom:.8rem">Editar evento</h3>
               <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
               <input type="hidden" name="op" value="editar">
               <input type="hidden" name="escala_id" value="<?= $es['id'] ?>">
               <input type="hidden" name="mes" value="<?= $mes ?>">
               <input type="hidden" name="ano" value="<?= $ano ?>">
-              <label>Nova data</label>
-              <input type="date" name="data_evento" value="<?= e($es['data_evento']) ?>" required style="width:100%;margin-bottom:.6rem">
-              <label>Novo horário de chegada</label>
-              <input type="time" name="horario_chegada" value="<?= e(substr($es['horario_chegada'],0,5)) ?>" required style="width:100%;margin-bottom:.8rem">
-              <p class="muted" style="font-size:.85rem;margin-bottom:.8rem">Os colaboradores escalados continuam no evento — só a data e o horário mudam.</p>
+
+              <label>Nome do evento</label>
+              <input type="text" name="evento" maxlength="150" required
+                     value="<?= e($es['evento']) ?>" style="width:100%;margin-bottom:.6rem">
+
+              <div style="display:flex;gap:.6rem">
+                <div style="flex:1">
+                  <label>Data</label>
+                  <input type="date" name="data_evento" value="<?= e($es['data_evento']) ?>" required style="width:100%;margin-bottom:.6rem">
+                </div>
+                <div style="flex:1">
+                  <label>Horário de chegada</label>
+                  <input type="time" name="horario_chegada" value="<?= e(substr($es['horario_chegada'],0,5)) ?>" required style="width:100%;margin-bottom:.6rem">
+                </div>
+              </div>
+
+              <div style="display:flex;gap:.6rem">
+                <div style="flex:1">
+                  <label>Qtd. de colaboradores</label>
+                  <input type="number" name="num_colaboradores" min="1" max="20" required
+                         value="<?= (int)$es['num_colaboradores'] ?>" style="width:100%;margin-bottom:.6rem">
+                </div>
+                <div style="flex:1">
+                  <label>Status</label>
+                  <select name="status" style="width:100%;margin-bottom:.6rem">
+                    <option value="aberta" <?= $es['status']==='aberta'?'selected':'' ?>>Aberta</option>
+                    <option value="preenchida" <?= $es['status']==='preenchida'?'selected':'' ?>>Preenchida</option>
+                  </select>
+                </div>
+              </div>
+
+              <label style="display:flex;align-items:center;gap:.5rem;font-weight:500;margin-bottom:.8rem">
+                <input type="checkbox" name="exige_lider" style="width:auto"
+                       <?= !empty($es['exige_lider']) ? 'checked' : '' ?>>
+                Exige colaborador principal escalado
+              </label>
+
+              <p class="muted" style="font-size:.85rem;margin-bottom:.8rem">Os colaboradores já escalados neste evento são mantidos.</p>
               <div style="display:flex;gap:.4rem;justify-content:flex-end">
                 <button type="button" class="btn sm sec" onclick="this.closest('dialog').close()">Cancelar</button>
                 <button type="submit" class="btn sm">Salvar</button>
@@ -271,7 +326,7 @@ require __DIR__ . '/includes/header.php';
 </div>
 
 <style>
-.dlg-editar{border:none;border-radius:14px;padding:1.4rem;max-width:380px;width:90vw;
+.dlg-editar{border:none;border-radius:14px;padding:1.4rem;max-width:440px;width:90vw;
   box-shadow:0 24px 60px rgba(0,0,0,.25)}
 .dlg-editar::backdrop{background:rgba(0,0,0,.4)}
 .dlg-editar label{display:block;font-size:.85rem;color:var(--texto-suave);margin-bottom:.2rem}

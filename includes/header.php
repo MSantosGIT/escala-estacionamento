@@ -9,6 +9,16 @@ function navItem($href, $icone, $rotulo, $pg) {
     $ativo = $pg === $href ? ' on' : '';
     echo '<a class="sb-link' . $ativo . '" href="' . $href . '"><span class="ic">' . $icone . '</span> ' . e($rotulo) . '</a>';
 }
+function navGroup($titulo, $icone, array $itens, $pg) {
+    $ativo = false;
+    foreach ($itens as $it) { if ($it[0] === $pg) { $ativo = true; break; } }
+    echo '<details class="sb-grupo"' . ($ativo ? ' open' : '') . '>';
+    echo '<summary class="sb-grupo-tit' . ($ativo ? ' on' : '') . '"><span class="ic">' . $icone . '</span> '
+       . e($titulo) . '<span class="sb-seta">▾</span></summary>';
+    echo '<div class="sb-sub">';
+    foreach ($itens as $it) { navItem($it[0], $it[1], $it[2], $pg); }
+    echo '</div></details>';
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -49,29 +59,50 @@ if ('serviceWorker' in navigator) {
       navItem('dashboard.php', '🏠', 'Início', $pg);
       navItem('checkin.php', '📍', 'Check-in', $pg);
       navItem('busca.php', '🔍', 'Buscar veículo', $pg);
-      navItem('escalas.php', '📋', 'Escalas', $pg);
-      navItem('calendario.php', '📅', 'Calendário', $pg);
-      navItem('lista_eventos.php', '🎫', 'Eventos', $pg);
-      navItem('carros_evento.php', '📈', 'Carros por evento', $pg);
-      navItem('trocas.php', '🔁', 'Trocas', $pg);
-      navItem('historico_trocas.php', '📜', 'Histórico de trocas', $pg);
-      navItem('disponibilidade.php', '✅', 'Disponibilidade', $pg);
-      navItem('historico_disponibilidade.php', '📆', 'Histórico disponibilidade', $pg);
-      navItem('historico.php', '🕘', 'Histórico', $pg);
-      navItem('relatorio_anual.php', '📊', 'Relatório anual', $pg);
+
+      navGroup('Escala', '📋', [
+        ['escalas.php', '📋', 'Escalas'],
+        ['calendario.php', '📅', 'Calendário'],
+        ['lista_eventos.php', '🎫', 'Eventos'],
+        ['carros_evento.php', '📈', 'Carros por evento'],
+      ], $pg);
+
+      navGroup('Trocas', '🔁', [
+        ['trocas.php', '🔁', 'Solicitar / acompanhar'],
+        ['historico_trocas.php', '📜', 'Histórico de trocas'],
+      ], $pg);
+
+      navGroup('Disponibilidade', '✅', [
+        ['disponibilidade.php', '✅', 'Minha disponibilidade'],
+        ['historico_disponibilidade.php', '📆', 'Histórico'],
+      ], $pg);
+
+      navGroup('Relatórios', '📊', [
+        ['historico.php', '🕘', 'Histórico geral'],
+        ['relatorio_anual.php', '📊', 'Relatório anual'],
+      ], $pg);
+
       navItem('sobre.php', 'ℹ️', 'Sobre', $pg);
+
       if (ehAdmin()):
     ?>
       <div class="sb-sep">Administração</div>
       <?php
-        navItem('colaboradores.php', '👥', 'Colaboradores', $pg);
-        navItem('admin_escala.php', '🛠️', 'Ajustar escala', $pg);
-        navItem('admin_indisponibilidade.php', '🚫', 'Indisp. (Admin)', $pg);
+        navGroup('Equipe', '👥', [
+          ['colaboradores.php', '👥', 'Colaboradores'],
+          ['usuarios.php', '👤', 'Usuários'],
+          ['acessos.php', '🕒', 'Acessos'],
+        ], $pg);
+
+        navGroup('Escala (Admin)', '🛠️', [
+          ['admin_escala.php', '🛠️', 'Ajustar escala'],
+          ['admin_indisponibilidade.php', '🚫', 'Indisponibilidade'],
+          ['disponiveis.php', '🟢', 'Disponíveis'],
+          ['checklist_itens.php', '📋', 'Checklist'],
+        ], $pg);
+
         navItem('veiculos.php', '🚗', 'Veículos', $pg);
-        navItem('usuarios.php', '👤', 'Usuários', $pg);
-        navItem('acessos.php', '🕒', 'Acessos', $pg);
         navItem('enviar_alerta.php', '📢', 'Enviar alerta', $pg);
-        navItem('checklist_itens.php', '📋', 'Checklist', $pg);
       ?>
     <?php endif; ?>
   </nav>
@@ -84,7 +115,7 @@ if ('serviceWorker' in navigator) {
 </aside>
 
 <?php if ($ajuda): ?>
-<button type="button" id="btnAjuda" class="no-print" title="Ajuda desta tela" onclick="abrirAjuda()">❓</button>
+<button type="button" id="btnAjuda" class="no-print" title="Ajuda desta tela" onclick="abrirAjuda()">?</button>
 
 <div id="ajudaOverlay" class="ajuda-overlay no-print" onclick="if(event.target===this) fecharAjuda()">
   <div class="ajuda-painel">
