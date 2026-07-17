@@ -1,8 +1,10 @@
 <?php
 require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/ajuda_conteudo.php';
 exigirLogin();
 $pg = basename($_SERVER['PHP_SELF']);
 $u  = usuario();
+$ajuda = ajudaDaTelaAtual();
 function navItem($href, $icone, $rotulo, $pg) {
     $ativo = $pg === $href ? ' on' : '';
     echo '<a class="sb-link' . $ativo . '" href="' . $href . '"><span class="ic">' . $icone . '</span> ' . e($rotulo) . '</a>';
@@ -21,7 +23,7 @@ function navItem($href, $icone, $rotulo, $pg) {
 <meta name="apple-mobile-web-app-title" content="Apoio Externo">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="icon" href="assets/icons/favicon.png" type="image/png">
-<link rel="stylesheet" href="assets/css/style.css?v=13">
+<link rel="stylesheet" href="assets/css/style.css?v=14">
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -79,6 +81,34 @@ if ('serviceWorker' in navigator) {
     <a class="sb-sair" href="logout.php">↪ Sair</a>
   </div>
 </aside>
+
+<?php if ($ajuda): ?>
+<button type="button" id="btnAjuda" class="no-print" title="Ajuda desta tela" onclick="abrirAjuda()">❓</button>
+
+<div id="ajudaOverlay" class="ajuda-overlay no-print" onclick="if(event.target===this) fecharAjuda()">
+  <div class="ajuda-painel">
+    <div class="ajuda-cab">
+      <h2><?= e($ajuda['titulo']) ?></h2>
+      <button type="button" class="ajuda-x" onclick="fecharAjuda()" title="Fechar">✕</button>
+    </div>
+    <div class="ajuda-corpo">
+      <?php if (!empty($ajuda['intro'])): ?>
+        <p class="ajuda-intro"><?= e($ajuda['intro']) ?></p>
+      <?php endif; ?>
+      <?php if (!empty($ajuda['passos'])): ?>
+        <ul class="ajuda-passos">
+          <?php foreach ($ajuda['passos'] as $i => $passo): ?>
+            <li><span class="ajuda-num"><?= $i + 1 ?></span><span><?= e($passo) ?></span></li>
+          <?php endforeach; ?>
+        </ul>
+      <?php endif; ?>
+      <?php if (!empty($ajuda['dica'])): ?>
+        <div class="ajuda-dica">💡 <b>Dica:</b> <?= e($ajuda['dica']) ?></div>
+      <?php endif; ?>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
 
 <main class="conteudo">
 <div id="pwa-instalar" class="no-print" style="display:none;align-items:center;justify-content:space-between;gap:1rem;background:linear-gradient(120deg,var(--laranja-5),var(--laranja-4));color:#fff;padding:.7rem 1rem;border-radius:12px;margin-bottom:1rem">
@@ -205,3 +235,18 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('input.mask-tel').forEach(i => i.value = formatarTelefone(i.value));
 });
 </script>
+
+<script>
+function abrirAjuda(){
+  const ov = document.getElementById('ajudaOverlay');
+  if (ov) ov.classList.add('aberto');
+}
+function fecharAjuda(){
+  const ov = document.getElementById('ajudaOverlay');
+  if (ov) ov.classList.remove('aberto');
+}
+document.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape') fecharAjuda();
+});
+</script>
+
