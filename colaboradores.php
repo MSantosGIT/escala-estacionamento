@@ -63,6 +63,13 @@ if ($busca !== '') {
 } else {
     $lista = $pdo->query("SELECT * FROM colaboradores WHERE ativo=1 ORDER BY FIELD(nivel,'lider','pleno','junior'), nome")->fetchAll();
 }
+
+// contagem por nível (reflete a lista atual, já considerando busca se houver)
+$qtdPorNivel = ['lider'=>0, 'pleno'=>0, 'junior'=>0];
+foreach ($lista as $c) {
+    if (isset($qtdPorNivel[$c['nivel']])) $qtdPorNivel[$c['nivel']]++;
+}
+
 $titulo = 'Colaboradores';
 require __DIR__ . '/includes/header.php';
 ?>
@@ -110,7 +117,14 @@ require __DIR__ . '/includes/header.php';
 
 <div class="card">
   <div class="flex-between" style="margin-bottom:1rem">
-    <h2 style="margin:0">Equipe cadastrada <span class="badge ok"><?= count($lista) ?></span></h2>
+    <h2 style="margin:0;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+      Equipe cadastrada <span class="badge ok"><?= count($lista) ?></span>
+      <span class="eq-niveis">
+        <span class="badge lider">A1 · <?= $qtdPorNivel['lider'] ?></span>
+        <span class="badge pleno">A2 · <?= $qtdPorNivel['pleno'] ?></span>
+        <span class="badge junior">A3 · <?= $qtdPorNivel['junior'] ?></span>
+      </span>
+    </h2>
     <form method="get" style="display:flex;gap:.4rem;align-items:center">
       <input type="text" name="busca" value="<?= e($busca) ?>" placeholder="🔍 Nome ou celular" style="min-width:220px">
       <button class="btn sm">Buscar</button>

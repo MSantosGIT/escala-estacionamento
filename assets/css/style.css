@@ -164,6 +164,9 @@ tr:hover td{background:var(--laranja-1)}
 .badge.lider{background:#fbe2c0;color:#9a4f12;box-shadow:inset 0 0 0 1px #e9b877}
 .badge.pleno{background:#d6ecf5;color:#1f6b86;box-shadow:inset 0 0 0 1px #9cc9da}
 .badge.junior{background:#dbeedd;color:#2f7d49;box-shadow:inset 0 0 0 1px #a6d4b0}
+.eq-niveis{display:inline-flex;gap:.4rem;margin-left:.4rem;padding-left:.7rem;
+  border-left:1px solid var(--borda);font-size:.78rem}
+.eq-niveis .badge{font-size:.72rem}
 .badge.ok{background:#dff3e3;color:#3c7b4c}
 .badge.warn{background:#ffe1cf;color:#c25a2a}
 
