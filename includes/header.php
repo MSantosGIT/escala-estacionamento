@@ -73,6 +73,7 @@ if ('serviceWorker' in navigator) {
         ['calendario.php', '📅', 'Calendário'],
         ['lista_eventos.php', '🎫', 'Eventos'],
         ['carros_evento.php', '📈', 'Carros por evento'],
+        ['eventos_finalizados.php', '🔒', 'Eventos finalizados'],
       ], $pg);
 
       navGroup('trocas', 'Trocas', '🔁', [

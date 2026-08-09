@@ -73,6 +73,17 @@ function ajudaConteudo(): array {
             ],
         ],
 
+        'eventos_finalizados.php' => [
+            'titulo' => '🔒 Eventos finalizados',
+            'intro'  => 'Consulte os dados completos dos eventos já encerrados — sem opção de alterar nada.',
+            'passos' => [
+                'Cada evento mostra quem encerrou, quando, e o checklist de encerramento preenchido.',
+                'Veja também os horários de check-in de cada colaborador que confirmou presença.',
+                'Quando houver, o movimento de veículos e as fotos do evento também aparecem.',
+                'Use o filtro no topo para restringir a este mês ou a este ano.',
+            ],
+        ],
+
         'carros_evento.php' => [
             'titulo' => '📈 Carros por evento',
             'intro'  => 'Registre a movimentação de veículos de cada evento, separada por área: Principal, Anexo, Gramado e Externo.',
