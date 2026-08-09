@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($qtdColab) $partes[] = $qtdColab . ' colaborador(es)';
     if ($qtdAdmin) $partes[] = $qtdAdmin . ' administrador(es)';
     flash('Alerta enviado para ' . implode(' e ', $partes) . '.');
-    redirect('enviar_alerta.php');
+    redirect('enviar_alerta.php?enviado=' . $alertaId);
 }
 
 $colabs = $pdo->query(
@@ -104,11 +104,80 @@ if ($alertasEnviados) {
     }
 }
 
+// ---- links de WhatsApp do alerta recém-enviado (opção 1: wa.me, gratuita) ----
+function normalizarCelularWa(?string $celular): ?string {
+    $digitos = preg_replace('/\D/', '', (string)$celular);
+    if ($digitos === '') return null;
+    // remove um "0" de operadora à esquerda, se vier assim por engano
+    if (strlen($digitos) === 12 && $digitos[0] === '0') $digitos = substr($digitos, 1);
+    // já tem DDI 55? senão, adiciona (assume número brasileiro: DDD + 8/9 dígitos)
+    if (strlen($digitos) === 10 || strlen($digitos) === 11) $digitos = '55' . $digitos;
+    if (strlen($digitos) < 12 || strlen($digitos) > 13) return null; // formato não reconhecido
+    return $digitos;
+}
+
+$alertaEnviado = null;
+$linksWa = [];
+if (isset($_GET['enviado'])) {
+    $aid = (int)$_GET['enviado'];
+    $st = $pdo->prepare("SELECT id, mensagem FROM alertas WHERE id=?");
+    $st->execute([$aid]);
+    $alertaEnviado = $st->fetch();
+
+    if ($alertaEnviado) {
+        $st = $pdo->prepare(
+          "SELECT u.nome, u.tipo, c.celular
+           FROM alertas_destinatarios d
+           JOIN usuarios u ON u.id = d.usuario_id
+           LEFT JOIN colaboradores c ON c.id = u.colaborador_id
+           WHERE d.alerta_id = ?
+           ORDER BY u.nome"
+        );
+        $st->execute([$aid]);
+        $textoWa = '*Apoio Externo:* ' . $alertaEnviado['mensagem'];
+        foreach ($st->fetchAll() as $dest) {
+            $numero = normalizarCelularWa($dest['celular'] ?? null);
+            $linksWa[] = [
+                'nome' => $dest['nome'],
+                'numero' => $numero,
+                'link' => $numero ? ('https://wa.me/' . $numero . '?text=' . rawurlencode($textoWa)) : null,
+            ];
+        }
+    }
+}
+
 $titulo = 'Enviar alerta';
 require __DIR__ . '/includes/header.php';
 ?>
 <h1 class="page-title">Enviar alerta</h1>
 <p class="page-sub">Envie um aviso que aparece na tela inicial dos colaboradores.</p>
+
+<?php if ($alertaEnviado): ?>
+<div class="wa-box">
+  <div class="wa-box-tit">💬 Enviar também pelo WhatsApp</div>
+  <p class="muted" style="margin:.2rem 0 .9rem;font-size:.88rem">
+    O alerta já foi salvo no sistema. Toque em cada nome abaixo para abrir o WhatsApp
+    com a mensagem pronta — só falta apertar enviar.
+  </p>
+  <?php if (!$linksWa): ?>
+    <p class="muted">Nenhum destinatário encontrado.</p>
+  <?php else: ?>
+  <ul class="wa-lista">
+    <?php foreach ($linksWa as $l): ?>
+    <li>
+      <span class="wa-nome"><?= e($l['nome']) ?></span>
+      <?php if ($l['link']): ?>
+        <a class="btn sm wa-btn" href="<?= e($l['link']) ?>" target="_blank" rel="noopener">💬 Enviar no WhatsApp</a>
+      <?php else: ?>
+        <span class="wa-sem">sem celular cadastrado</span>
+      <?php endif; ?>
+    </li>
+    <?php endforeach; ?>
+  </ul>
+  <?php endif; ?>
+  <a href="enviar_alerta.php" class="btn sm sec" style="margin-top:.9rem">Fechar</a>
+</div>
+<?php endif; ?>
 
 <div class="card" style="max-width:620px">
   <form method="post" id="formAlerta">
@@ -194,6 +263,17 @@ require __DIR__ . '/includes/header.php';
 <?php endif; ?>
 
 <style>
+.wa-box{background:#e7f8ec;border:1px solid #b9e6c4;border-radius:12px;
+  padding:1rem 1.2rem;margin-bottom:1.3rem}
+.wa-box-tit{font-weight:800;color:#1f7a3d;font-size:1.05rem}
+.wa-lista{list-style:none;padding:0;margin:0}
+.wa-lista li{display:flex;align-items:center;justify-content:space-between;gap:.7rem;
+  padding:.5rem 0;border-bottom:1px dashed #b9e6c4;flex-wrap:wrap}
+.wa-lista li:last-child{border-bottom:none}
+.wa-nome{font-weight:600;color:#2b4a34}
+.wa-btn{background:#25D366;color:#fff;border:none}
+.wa-btn:hover{background:#1ebe5a}
+.wa-sem{color:#888;font-size:.82rem;font-style:italic}
 .opcoes-destino{display:flex;flex-direction:column;gap:.6rem;margin:.4rem 0 .9rem}
 .opt{display:flex;align-items:center;gap:.6rem;cursor:pointer;font-weight:500;line-height:1.2}
 .opt input{width:18px;height:18px;flex:0 0 auto;margin:0}
