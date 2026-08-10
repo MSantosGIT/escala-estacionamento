@@ -90,6 +90,7 @@ require __DIR__ . '/includes/header.php';
 <div class="historico-lista">
   <?php foreach ($trocas as $t):
     list($stLabel, $stClass, $stIcon) = statusInfo($t['status']);
+    $rotuloNovo = $t['status'] === 'confirmada' ? 'Passa para' : 'Proposta: passaria para';
   ?>
   <div class="troca-card">
     <div class="troca-topo">
@@ -103,10 +104,40 @@ require __DIR__ . '/includes/header.php';
       <b><?= e($t['alvo_nome']) ?></b>
     </div>
 
-    <div class="troca-evento">
-      <span class="muted">Evento:</span>
-      <?= e($t['evento_origem']) ?> · <?= dataEvento($t['data_origem']) ?>
-      <?php if ($t['data_origem']): ?>às <?= substr($t['hora_origem'],0,5) ?><?php endif; ?>
+    <div class="troca-eventos">
+      <div class="te-box">
+        <div class="te-quem">👤 <?= e($t['solicitante_nome']) ?></div>
+        <div class="te-de">
+          <span class="te-tag">Estava em</span>
+          <?= e($t['evento_origem']) ?> · <?= dataEvento($t['data_origem']) ?><?php if ($t['hora_origem']): ?> às <?= substr($t['hora_origem'],0,5) ?><?php endif; ?>
+        </div>
+        <div class="te-seta-baixo">↓</div>
+        <?php if ($t['evento_alvo']): ?>
+          <div class="te-para">
+            <span class="te-tag novo"><?= e($rotuloNovo) ?></span>
+            <?= e($t['evento_alvo']) ?> · <?= dataEvento($t['data_alvo']) ?><?php if ($t['hora_alvo']): ?> às <?= substr($t['hora_alvo'],0,5) ?><?php endif; ?>
+          </div>
+        <?php else: ?>
+          <div class="te-alerta">⚠️ Fica sem escala — <?= e($t['alvo_nome']) ?> não tinha evento para oferecer em troca</div>
+        <?php endif; ?>
+      </div>
+
+      <div class="te-box">
+        <div class="te-quem">👤 <?= e($t['alvo_nome']) ?></div>
+        <?php if ($t['evento_alvo']): ?>
+          <div class="te-de">
+            <span class="te-tag">Estava em</span>
+            <?= e($t['evento_alvo']) ?> · <?= dataEvento($t['data_alvo']) ?><?php if ($t['hora_alvo']): ?> às <?= substr($t['hora_alvo'],0,5) ?><?php endif; ?>
+          </div>
+          <div class="te-seta-baixo">↓</div>
+        <?php else: ?>
+          <div class="te-alerta">⚠️ Não estava escalado em nenhum evento</div>
+        <?php endif; ?>
+        <div class="te-para">
+          <span class="te-tag novo"><?= e($rotuloNovo) ?></span>
+          <?= e($t['evento_origem']) ?> · <?= dataEvento($t['data_origem']) ?><?php if ($t['hora_origem']): ?> às <?= substr($t['hora_origem'],0,5) ?><?php endif; ?>
+        </div>
+      </div>
     </div>
 
     <ul class="troca-timeline">
@@ -181,6 +212,21 @@ require __DIR__ . '/includes/header.php';
 @media (max-width:560px){
   .tl-data{display:none}
 }
+
+.troca-eventos{display:grid;grid-template-columns:1fr 1fr;gap:1rem;
+  margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px dashed var(--borda)}
+@media(max-width:560px){.troca-eventos{grid-template-columns:1fr}}
+.te-box{background:var(--laranja-1);border:1px solid var(--laranja-3);
+  border-radius:10px;padding:.7rem .9rem}
+.te-quem{font-weight:700;color:var(--laranja-6);font-size:.9rem;margin-bottom:.5rem}
+.te-tag{display:block;font-size:.68rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.4px;color:var(--texto-suave);margin-bottom:.1rem}
+.te-tag.novo{color:#2f7d49}
+.te-de,.te-para{font-size:.87rem;color:#444}
+.te-para{color:#1f6b3d;font-weight:600}
+.te-seta-baixo{text-align:center;color:var(--laranja-5);font-size:.9rem;margin:.3rem 0}
+.te-alerta{background:#fff3e0;border:1px solid #ffd9a8;border-radius:8px;
+  padding:.5rem .7rem;font-size:.82rem;color:#9a5a12;font-weight:600;margin:.2rem 0}
 </style>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>
