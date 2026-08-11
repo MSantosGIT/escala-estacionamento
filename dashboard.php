@@ -42,7 +42,7 @@ $notifAdmin  = ehAdmin() ? notificacoesAdmin($pdo) : [];
 $meusAlertas = [];
 if ($meuUserId) {
     $st = $pdo->prepare(
-      "SELECT a.id, a.mensagem
+      "SELECT a.id, a.mensagem, a.link
        FROM alertas_destinatarios d
        JOIN alertas a ON a.id = d.alerta_id
        WHERE d.usuario_id = ? AND d.visto_em IS NULL
@@ -99,7 +99,11 @@ require __DIR__ . '/includes/header.php';
 <?php /* Alertas gerais (enviados pelo admin) — controle individual por usuário */ ?>
 <?php foreach ($meusAlertas as $al): ?>
   <div class="flash aviso" style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
-    <span>📢 <?= e($al['mensagem']) ?></span>
+    <?php if (!empty($al['link'])): ?>
+      <a href="<?= e($al['link']) ?>" class="alerta-link">📢 <?= e($al['mensagem']) ?> <span class="alerta-ir">Ver →</span></a>
+    <?php else: ?>
+      <span>📢 <?= e($al['mensagem']) ?></span>
+    <?php endif; ?>
     <form method="post" style="margin:0">
       <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
       <input type="hidden" name="op" value="dispensar_alerta">

@@ -19,6 +19,18 @@ function ajudaConteudo(): array {
             'dica' => 'Confira o painel Início sempre que abrir o sistema — é onde os avisos mais importantes aparecem primeiro.',
         ],
 
+        'confirmar_escala.php' => [
+            'titulo' => '✔️ Confirmar escala',
+            'intro'  => 'Dê o ciente nos eventos em que você foi escalado, confirmando que vai comparecer.',
+            'passos' => [
+                'A confirmação de cada evento abre 7 dias antes da data. Antes disso, o evento aparece com a data em que a confirmação será liberada.',
+                'Quando abrir, o sistema envia um alerta na tela inicial — clique nele para vir direto para cá.',
+                'Toque em "✓ Confirmar minha presença" no evento correspondente. A data e hora da confirmação ficam registradas.',
+                'Administradores veem, na parte de baixo, a lista de quem ainda não confirmou cada evento futuro — destacada em vermelho quando falta menos de 24h.',
+            ],
+            'dica' => 'Confirme assim que receber o alerta. Se faltarem menos de 24h e você não tiver confirmado, os administradores são avisados automaticamente.',
+        ],
+
         'checkin.php' => [
             'titulo' => '📍 Check-in de chegada',
             'intro'  => 'Confirme sua chegada no local do evento. A janela de check-in abre 30 minutos antes do horário e fecha 1h30 depois do início.',

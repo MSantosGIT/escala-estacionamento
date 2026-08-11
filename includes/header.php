@@ -66,6 +66,7 @@ if ('serviceWorker' in navigator) {
     <?php
       navItem('dashboard.php', '🏠', 'Início', $pg);
       navItem('checkin.php', '📍', 'Check-in', $pg);
+      navItem('confirmar_escala.php', '✔️', 'Confirmar escala', $pg);
       navItem('busca.php', '🔍', 'Buscar veículo', $pg);
 
       navGroup('escala', 'Escala', '📋', [

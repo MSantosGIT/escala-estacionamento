@@ -189,6 +189,11 @@ tr:hover td{background:var(--laranja-1)}
   font-weight:700;
 }
 .flash.aviso .btn:hover{background:#fff}
+.alerta-link{color:#fff;text-decoration:none;flex:1;display:flex;align-items:center;
+  gap:.5rem;flex-wrap:wrap}
+.alerta-link:hover{text-decoration:underline}
+.alerta-ir{background:rgba(255,255,255,.25);border-radius:12px;padding:.1rem .5rem;
+  font-size:.78rem;font-weight:700;white-space:nowrap}
 @keyframes pulso-alerta{
   0%,100%{box-shadow:0 6px 20px rgba(227,6,19,.45)}
   50%{box-shadow:0 6px 28px rgba(227,6,19,.75)}
