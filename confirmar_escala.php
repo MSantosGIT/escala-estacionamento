@@ -153,7 +153,7 @@ require __DIR__ . '/includes/header.php';
     $ev = $grupo['evento'];
     $inicio = strtotime($ev['data_evento'] . ' ' . $ev['horario_chegada']);
     $horasFaltando = ($inicio - time()) / 3600;
-    $urgente = $horasFaltando <= 24;
+    $urgente = $horasFaltando <= 48;
   ?>
   <div class="card <?= $urgente ? 'card-urgente' : '' ?>" style="margin-bottom:1rem">
     <div class="flex-between" style="flex-wrap:wrap;gap:.5rem">
@@ -164,7 +164,7 @@ require __DIR__ . '/includes/header.php';
         </span>
       </h3>
       <span class="badge <?= $urgente ? 'warn' : 'ok' ?>">
-        <?= count($grupo['itens']) ?> pendente(s)<?= $urgente ? ' · menos de 24h!' : '' ?>
+        <?= count($grupo['itens']) ?> pendente(s)<?= $urgente ? ' · menos de 48h!' : '' ?>
       </span>
     </div>
     <ul class="pend-lista">

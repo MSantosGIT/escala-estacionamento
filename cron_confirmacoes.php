@@ -6,7 +6,7 @@
 //
 //  O que faz:
 //   1) 7 dias antes do evento  -> alerta a cada escalado: "confirme sua escala"
-//   2) 24h antes do evento     -> alerta aos admins com a lista de quem não confirmou
+//   2) 48h antes do evento     -> alerta aos admins com a lista de quem não confirmou
 //
 //  A tabela avisos_enviados impede que o mesmo aviso saia duas vezes.
 // ============================================================
@@ -73,20 +73,20 @@ foreach ($eventos7 as $ev) {
 }
 
 // ------------------------------------------------------------
-// 2) AVISO DE 24H: listar aos admins quem não confirmou
+// 2) AVISO DE 48H: listar aos admins quem não confirmou
 // ------------------------------------------------------------
-$alvo24 = (clone $hoje)->modify('+1 day')->format('Y-m-d');
+$alvo48 = (clone $hoje)->modify('+2 days')->format('Y-m-d');
 
 $st = $pdo->prepare(
   "SELECT e.id, e.evento, e.data_evento
    FROM escalas e
-   LEFT JOIN avisos_enviados a ON a.escala_id = e.id AND a.tipo = 'pendentes_24h'
+   LEFT JOIN avisos_enviados a ON a.escala_id = e.id AND a.tipo = 'pendentes_48h'
    WHERE e.data_evento = ? AND a.id IS NULL"
 );
-$st->execute([$alvo24]);
-$eventos24 = $st->fetchAll();
+$st->execute([$alvo48]);
+$eventos48 = $st->fetchAll();
 
-foreach ($eventos24 as $ev) {
+foreach ($eventos48 as $ev) {
     // colaboradores escalados que NÃO confirmaram
     $st = $pdo->prepare(
       "SELECT c.nome
@@ -116,13 +116,13 @@ foreach ($eventos24 as $ev) {
             $ins = $pdo->prepare("INSERT INTO alertas_destinatarios (alerta_id, usuario_id) VALUES (?, ?)");
             foreach ($admins as $uid) $ins->execute([$alertaId, (int)$uid]);
 
-            $log[] = "[24h] Evento '{$ev['evento']}': {$qtd} pendente(s), alerta para " . count($admins) . " admin(s).";
+            $log[] = "[48h] Evento '{$ev['evento']}': {$qtd} pendente(s), alerta para " . count($admins) . " admin(s).";
         }
     } else {
-        $log[] = "[24h] Evento '{$ev['evento']}': todos confirmaram.";
+        $log[] = "[48h] Evento '{$ev['evento']}': todos confirmaram.";
     }
 
-    $pdo->prepare("INSERT IGNORE INTO avisos_enviados (escala_id, tipo) VALUES (?, 'pendentes_24h')")
+    $pdo->prepare("INSERT IGNORE INTO avisos_enviados (escala_id, tipo) VALUES (?, 'pendentes_48h')")
         ->execute([(int)$ev['id']]);
 }
 
