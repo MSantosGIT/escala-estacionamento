@@ -222,10 +222,12 @@ require __DIR__ . '/includes/header.php';
 .filtro-mes{display:flex;align-items:center;gap:.5rem;margin:-.6rem 0 1.2rem;font-size:.9rem}
 .filtro-mes label{color:var(--texto-suave);font-weight:600}
 .filtro-mes select{min-width:200px}
-.hist-evento-bloco{margin-bottom:1rem;padding-bottom:.8rem;border-bottom:1px solid var(--borda)}
-.hist-evento-bloco:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none}
+.hist-evento-bloco{margin-bottom:.9rem;padding:.8rem .9rem;border-radius:10px;
+  background:var(--laranja-1);border:1px solid var(--laranja-3)}
+.hist-evento-bloco:last-child{margin-bottom:0}
 .hist-evento-tit{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;
-  font-weight:700;color:var(--laranja-6);font-size:.95rem;margin-bottom:.4rem}
+  font-weight:700;color:var(--laranja-6);font-size:.95rem;margin-bottom:.5rem;
+  padding-bottom:.5rem;border-bottom:1px solid var(--laranja-3)}
 .hist-evento-data{font-weight:400;color:var(--texto-suave);font-size:.85rem}
 .aba-btn{flex:1;min-width:140px;text-align:center;background:#fff;color:var(--laranja-6);
   border:1px solid var(--borda);border-radius:10px;padding:.6rem .8rem;font-weight:700;
@@ -235,7 +237,7 @@ require __DIR__ . '/includes/header.php';
 .hist-grupo h2{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
 .hist-lista{list-style:none;padding:0;margin:0}
 .hist-lista li{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;padding:.4rem 0;
-  font-size:.9rem;border-bottom:1px dashed var(--borda)}
+  font-size:.9rem;border-bottom:1px dashed var(--laranja-3)}
 .hist-lista li:last-child{border-bottom:none}
 .hist-nivel{font-weight:700;min-width:150px}
 .nivel-lider{color:#9a4f12}.nivel-pleno{color:#1f6b86}.nivel-junior{color:#2f7d49}
