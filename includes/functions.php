@@ -104,6 +104,27 @@ function ehAdmin(): bool {
 
 function exigirLogin(): void {
     if (!logado()) redirect('login.php');
+
+    // se o colaborador foi inativado depois do login, encerra a sessão agora
+    $u = usuario();
+    if ($u && !empty($u['colaborador_id'])) {
+        $st = db()->prepare("SELECT ativo FROM colaboradores WHERE id=?");
+        $st->execute([$u['colaborador_id']]);
+        $ativo = $st->fetchColumn();
+        if ($ativo === false || (int)$ativo !== 1) {
+            $_SESSION = [];
+            if (ini_get('session.use_cookies')) {
+                $p = session_get_cookie_params();
+                setcookie(session_name(), '', time() - 42000,
+                    $p['path'], $p['domain'], $p['secure'], $p['httponly']);
+            }
+            session_destroy();
+            session_start();
+            $_SESSION['flash'] = ['msg' => 'Sua conta foi desativada. Fale com o administrador.', 'tipo' => 'erro'];
+            header('Location: login.php');
+            exit;
+        }
+    }
 }
 
 function exigirAdmin(): void {
@@ -116,6 +137,57 @@ function exigirAdmin(): void {
 
 function nivelLabel(string $n): string {
     return ['lider' => 'A1', 'pleno' => 'A2', 'junior' => 'A3'][$n] ?? $n;
+}
+
+/**
+ * Inativa um colaborador e o remove de tudo que ainda vai acontecer:
+ * escalas futuras, trocas pendentes futuras, confirmações e
+ * indisponibilidades futuras. O histórico (eventos já ocorridos,
+ * relatórios, encerramentos) é preservado sem alteração.
+ */
+function inativarColaborador(PDO $pdo, int $colaboradorId): void {
+    $pdo->beginTransaction();
+    try {
+        // marca como inativo (some das listas de colaboradores ativos)
+        $pdo->prepare("UPDATE colaboradores SET ativo=0 WHERE id=?")->execute([$colaboradorId]);
+
+        // remove das escalas futuras (mantém as passadas como histórico)
+        $pdo->prepare(
+          "DELETE ec FROM escala_colaboradores ec
+           JOIN escalas e ON e.id = ec.escala_id
+           WHERE ec.colaborador_id = ? AND e.data_evento >= CURDATE()"
+        )->execute([$colaboradorId]);
+
+        // cancela trocas pendentes que envolvam eventos futuros
+        $pdo->prepare(
+          "UPDATE trocas_escala t
+           JOIN escalas e ON e.id = t.escala_origem_id
+           SET t.status = 'cancelada'
+           WHERE (t.solicitante_id = ? OR t.alvo_id = ?)
+             AND t.status IN ('pendente_colaborador','pendente_admin')
+             AND e.data_evento >= CURDATE()"
+        )->execute([$colaboradorId, $colaboradorId]);
+
+        // limpa confirmações de escala ("ciente") futuras
+        $pdo->prepare(
+          "DELETE cf FROM escala_confirmacoes cf
+           JOIN escalas e ON e.id = cf.escala_id
+           WHERE cf.colaborador_id = ? AND e.data_evento >= CURDATE()"
+        )->execute([$colaboradorId]);
+
+        // limpa indisponibilidades futuras (não fazem mais sentido)
+        $pdo->prepare(
+          "DELETE i FROM indisponibilidades i
+           JOIN escalas e ON e.id = i.escala_id
+           WHERE i.colaborador_id = ? AND e.data_evento >= CURDATE()"
+        )->execute([$colaboradorId]);
+
+        $pdo->commit();
+    } catch (Throwable $ex) {
+        $pdo->rollBack();
+        error_log('Erro ao inativar colaborador: ' . $ex->getMessage());
+        throw $ex;
+    }
 }
 
 function tokenCSRF(): string {

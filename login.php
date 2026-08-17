@@ -22,6 +22,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $st = db()->prepare("SELECT * FROM usuarios WHERE login = ?");
         $st->execute([$login]);
         $user = $st->fetch();
+
+        // bloqueia login de usuário cujo colaborador foi inativado
+        if ($user && $user['tipo'] === 'colaborador' && $user['colaborador_id']) {
+            $stAtivo = db()->prepare("SELECT ativo FROM colaboradores WHERE id=?");
+            $stAtivo->execute([$user['colaborador_id']]);
+            if ((int)$stAtivo->fetchColumn() !== 1) {
+                $user = null; // trata como login inválido
+                $erro = 'Login ou senha inválidos.';
+            }
+        }
+
         if ($user && password_verify($senha, $user['senha'])) {
             session_regenerate_id(true); // evita fixação de sessão
             $_SESSION['usuario'] = [

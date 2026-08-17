@@ -38,8 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // ---- excluir ----
 if ($acao === 'excluir' && ($id = (int)($_GET['id'] ?? 0))) {
-    $pdo->prepare("UPDATE colaboradores SET ativo=0 WHERE id=?")->execute([$id]);
-    flash('Colaborador desativado.');
+    inativarColaborador($pdo, $id);
+    flash('Colaborador desativado e removido da escala futura.');
     redirect('colaboradores.php');
 }
 
