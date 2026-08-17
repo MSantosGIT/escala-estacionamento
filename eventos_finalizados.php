@@ -31,6 +31,10 @@ if (!$ehAdm) {
     $params[] = $meuColabId;
 }
 $sql .= " WHERE 1=1 $condData ORDER BY e.data_evento DESC, e.horario_chegada DESC";
+// no filtro "Este mês", mostra só os 3 mais recentes
+if ($periodo === 'mes') {
+    $sql .= " LIMIT 3";
+}
 $st = $pdo->prepare($sql);
 $st->execute($params);
 $eventos = $st->fetchAll();
@@ -73,7 +77,7 @@ require __DIR__ . '/includes/header.php';
 <div class="flex-between" style="margin-bottom:.4rem;flex-wrap:wrap;gap:.6rem">
   <div>
     <h1 class="page-title" style="margin-bottom:.2rem">Eventos finalizados</h1>
-    <p class="page-sub" style="margin:0">Consulta dos eventos já encerrados — check-in, checklist e fotos. <?= $ehAdm ? '' : '(seus eventos)' ?></p>
+    <p class="page-sub" style="margin:0">Consulta dos eventos já encerrados — check-in, checklist e fotos. <?= $ehAdm ? '' : '(seus eventos)' ?><?= $periodo==='mes' ? ' <span class="muted" style="font-size:.85rem">(3 mais recentes)</span>' : '' ?></p>
   </div>
   <form method="get">
     <select name="periodo" onchange="this.form.submit()">

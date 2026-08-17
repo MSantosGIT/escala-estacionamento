@@ -6,9 +6,18 @@ $pdo = db();
 $mes = (int)($_GET['mes'] ?? date('n'));
 $ano = (int)($_GET['ano'] ?? date('Y'));
 
-$st = $pdo->prepare(
-  "SELECT * FROM escalas WHERE mes=? AND ano=? ORDER BY data_evento, horario_chegada"
-);
+// no mês corrente, mostra só os eventos que ainda não aconteceram
+$ehMesAtual = ($mes === (int)date('n') && $ano === (int)date('Y'));
+if ($ehMesAtual) {
+    $st = $pdo->prepare(
+      "SELECT * FROM escalas WHERE mes=? AND ano=? AND data_evento >= CURDATE()
+       ORDER BY data_evento, horario_chegada"
+    );
+} else {
+    $st = $pdo->prepare(
+      "SELECT * FROM escalas WHERE mes=? AND ano=? ORDER BY data_evento, horario_chegada"
+    );
+}
 $st->execute([$mes, $ano]);
 $eventos = $st->fetchAll();
 
@@ -43,7 +52,7 @@ require __DIR__ . '/includes/header.php';
 <div class="barra-lista no-print">
   <div>
     <h1 class="page-title" style="margin-bottom:.2rem">Eventos do mês</h1>
-    <p class="page-sub" style="margin:0"><?= e($meses[$mes]) ?> / <?= $ano ?> · <?= count($eventos) ?> evento(s)</p>
+    <p class="page-sub" style="margin:0"><?= e($meses[$mes]) ?> / <?= $ano ?> · <?= count($eventos) ?> evento(s)<?= $ehMesAtual ? ' <span class="muted" style="font-size:.85rem">(apenas os que ainda vão acontecer)</span>' : '' ?></p>
   </div>
   <form method="get" style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
     <select name="mes" onchange="this.form.submit()">

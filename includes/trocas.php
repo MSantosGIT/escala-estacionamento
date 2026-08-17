@@ -6,11 +6,15 @@ require_once __DIR__ . '/functions.php';
 
 /**
  * Define quais níveis podem trocar entre si.
- * Regra: A1 (lider) só troca com A1. A2 (pleno) e A3 (junior) trocam entre si.
+ * Regra:
+ *   A1 (líder) troca com A1 e A2
+ *   A2 (pleno) troca com A1, A2 e A3
+ *   A3 (júnior) troca com A2 e A3
  */
 function niveisCompativeis(string $nivel): array {
-    if ($nivel === 'lider') return ['lider'];
-    return ['pleno', 'junior']; // A2 e A3 trocam entre si
+    if ($nivel === 'lider')  return ['lider', 'pleno'];
+    if ($nivel === 'pleno')  return ['lider', 'pleno', 'junior'];
+    return ['pleno', 'junior']; // junior
 }
 
 /** Cria uma notificação para um colaborador. */
