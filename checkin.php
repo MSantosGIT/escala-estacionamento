@@ -19,11 +19,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $op = $_POST['op'] ?? '';
     $escalaId = (int)($_POST['escala_id'] ?? 0);
 
-    // valida se o evento é de hoje
+    // busca o evento (sem exigir que seja "hoje" — cada ação valida seu próprio prazo)
     $ev = null;
     if ($escalaId) {
-        $st = $pdo->prepare("SELECT * FROM escalas WHERE id=? AND data_evento=?");
-        $st->execute([$escalaId, $hoje]);
+        $st = $pdo->prepare("SELECT * FROM escalas WHERE id=?");
+        $st->execute([$escalaId]);
         $ev = $st->fetch();
     }
 
@@ -180,20 +180,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect('checkin.php');
 }
 
-// ---------- consulta dos eventos de hoje ----------
+// ---------- consulta dos eventos de hoje + dias recentes ----------
+// (mantém o card visível por alguns dias após o evento, para dar tempo
+//  de enviar fotos, encerrar ou corrigir o check-in sem o card sumir da tela)
+define('CHECKIN_DIAS_RETROATIVOS', 3);
+$dataMin = date('Y-m-d', strtotime('-' . CHECKIN_DIAS_RETROATIVOS . ' days'));
+
 if ($ehAdm) {
-    // admin vê todos os eventos de hoje
-    $st = $pdo->prepare("SELECT * FROM escalas WHERE data_evento=? ORDER BY horario_chegada");
-    $st->execute([$hoje]);
+    // admin vê os eventos de hoje e dos últimos dias
+    $st = $pdo->prepare(
+      "SELECT * FROM escalas WHERE data_evento BETWEEN ? AND ?
+       ORDER BY data_evento DESC, horario_chegada"
+    );
+    $st->execute([$dataMin, $hoje]);
 } else {
     // colaborador vê só os eventos em que está escalado
     $st = $pdo->prepare(
       "SELECT e.* FROM escalas e
        JOIN escala_colaboradores ec ON ec.escala_id = e.id
-       WHERE e.data_evento=? AND ec.colaborador_id=?
-       ORDER BY e.horario_chegada"
+       WHERE e.data_evento BETWEEN ? AND ? AND ec.colaborador_id=?
+       ORDER BY e.data_evento DESC, e.horario_chegada"
     );
-    $st->execute([$hoje, $meuColabId]);
+    $st->execute([$dataMin, $hoje, $meuColabId]);
 }
 $eventosHoje = $st->fetchAll();
 
@@ -262,7 +270,7 @@ require __DIR__ . '/includes/header.php';
 
 <?php if (!$eventosHoje): ?>
   <div class="card"><p class="muted">
-    <?= $ehAdm ? 'Nenhum evento hoje.' : 'Você não está escalado em nenhum evento hoje.' ?>
+    <?= $ehAdm ? 'Nenhum evento nos últimos dias.' : 'Você não está escalado em nenhum evento recente.' ?>
   </p></div>
 <?php endif; ?>
 
@@ -281,7 +289,7 @@ require __DIR__ . '/includes/header.php';
 ?>
 <div class="card" style="margin-bottom:1.2rem">
   <div class="flex-between" style="flex-wrap:wrap;gap:.5rem">
-    <h2 style="margin:0"><?= e($ev['evento']) ?> <span class="muted" style="font-weight:400;font-size:.9rem">⏰ <?= substr($ev['horario_chegada'],0,5) ?></span></h2>
+    <h2 style="margin:0"><?= e($ev['evento']) ?> <span class="muted" style="font-weight:400;font-size:.9rem"><?= date('d/m', $inicio) ?> · ⏰ <?= substr($ev['horario_chegada'],0,5) ?></span></h2>
     <?php if ($janela === 'aberta'): ?>
       <span class="ck-badge ck-aberta">Check-in aberto</span>
     <?php elseif ($janela === 'aguardando'): ?>
