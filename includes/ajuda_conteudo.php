@@ -151,11 +151,11 @@ function ajudaConteudo(): array {
 
         'historico_disponibilidade.php' => [
             'titulo' => '📆 Histórico de disponibilidade',
-            'intro'  => 'Para administradores: veja quem está disponível para cada evento. Para colaboradores: consulte seus próprios registros de indisponibilidade.',
+            'intro'  => 'Veja quem está disponível para cada evento — igual para todos os usuários.',
             'passos' => [
-                'Use as abas no topo para trocar a visão: "Por mês" (agrupado pelo mês do evento), "Por evento" e "Por colaborador" (histórico de cada pessoa — só para administradores).',
-                'Administradores veem, em todas as abas, a lista de quem está disponível (não quem está indisponível) — "Por mês" e "Por evento" mostram por evento, e "Por colaborador" mostra para quais eventos cada pessoa está livre.',
-                'Como colaborador, você vê apenas os seus próprios registros de indisponibilidade.',
+                'Use as abas no topo para trocar a visão: "Por mês" (agrupado pelo mês do evento), "Por evento" e "Por colaborador" (para quais eventos cada pessoa está livre).',
+                'Cada evento mostra a lista de colaboradores ativos que NÃO marcaram indisponibilidade — ou seja, quem está livre para ser escalado.',
+                'Use o seletor de mês para trocar o período (abre já no mês atual).',
             ],
         ],
 
