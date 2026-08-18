@@ -8,7 +8,7 @@ $ehAdm = ehAdmin();
 $meuColabId = (int)($u['colaborador_id'] ?? 0);
 
 // filtro de período
-$periodo = $_GET['periodo'] ?? 'todos';
+$periodo = $_GET['periodo'] ?? 'mes';
 $condData = '';
 if ($periodo === 'mes') {
     $condData = "AND e.data_evento >= '" . date('Y-m-01') . "' AND e.data_evento <= '" . date('Y-m-t') . "'";

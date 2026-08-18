@@ -154,8 +154,7 @@ function ajudaConteudo(): array {
             'intro'  => 'Para administradores: veja quem está disponível para cada evento. Para colaboradores: consulte seus próprios registros de indisponibilidade.',
             'passos' => [
                 'Use as abas no topo para trocar a visão: "Por mês" (agrupado pelo mês do evento), "Por evento" e "Por colaborador" (histórico de cada pessoa — só para administradores).',
-                'Administradores veem, em cada evento, a lista de colaboradores ativos que NÃO marcaram indisponibilidade — ou seja, quem está livre para ser escalado.',
-                'A aba "Por colaborador" continua mostrando o histórico pessoal de indisponibilidade de cada um, com data e hora do registro.',
+                'Administradores veem, em todas as abas, a lista de quem está disponível (não quem está indisponível) — "Por mês" e "Por evento" mostram por evento, e "Por colaborador" mostra para quais eventos cada pessoa está livre.',
                 'Como colaborador, você vê apenas os seus próprios registros de indisponibilidade.',
             ],
         ],

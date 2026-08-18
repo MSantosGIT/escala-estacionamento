@@ -102,36 +102,30 @@ if ($ehAdm) {
     }
     unset($pm);
 
-    // "por colaborador" continua mostrando o histórico pessoal de indisponibilidade
-    // (não faz sentido "inverter" — aqui é uma consulta de auditoria por pessoa)
-    $sqlColab = "
-      SELECT i.id, i.criado_em,
-             c.id AS colaborador_id, c.nome AS colaborador_nome, c.nivel,
-             e.evento, e.data_evento, e.mes, e.ano
-      FROM indisponibilidades i
-      JOIN colaboradores c ON c.id = i.colaborador_id
-      JOIN escalas e ON e.id = i.escala_id
-    ";
-    $paramsColab = [];
-    if ($filtroMes !== 'todos') {
-        [$anoF, $mesF] = explode('-', $filtroMes);
-        $sqlColab .= " WHERE e.ano=? AND e.mes=?";
-        $paramsColab = [(int)$anoF, (int)$mesF];
-    }
-    $sqlColab .= " ORDER BY c.nome, e.data_evento DESC";
-    $st = $pdo->prepare($sqlColab);
-    $st->execute($paramsColab);
-    $registrosIndisp = $st->fetchAll();
-
+    // "por colaborador": para cada pessoa, os eventos em que ELA está disponível
+    // (mesma lógica das outras abas — consistência em toda a tela)
     $porColaborador = [];
-    foreach ($registrosIndisp as $r) {
-        $cid = (int)$r['colaborador_id'];
-        if (!isset($porColaborador[$cid])) {
-            $porColaborador[$cid] = ['nome' => $r['colaborador_nome'], 'nivel' => $r['nivel'], 'itens' => []];
+    foreach ($colabsAtivos as $c) {
+        $porColaborador[(int)$c['id']] = ['nome' => $c['nome'], 'nivel' => $c['nivel'], 'itens' => []];
+    }
+    foreach ($eventosFiltrados as $ev) {
+        $eid = (int)$ev['id'];
+        $indispDoEvento = $indisp[$eid] ?? [];
+        foreach ($colabsAtivos as $c) {
+            $cid = (int)$c['id'];
+            if (!isset($indispDoEvento[$cid])) {
+                $porColaborador[$cid]['itens'][] = [
+                    'evento' => $ev['evento'], 'data_evento' => $ev['data_evento'],
+                    'horario' => $ev['horario_chegada'],
+                ];
+            }
         }
-        $porColaborador[$cid]['itens'][] = $r;
     }
     uasort($porColaborador, fn($a,$b) => strcmp($a['nome'], $b['nome']));
+    foreach ($porColaborador as &$pc) {
+        usort($pc['itens'], fn($a,$b) => strcmp($b['data_evento'], $a['data_evento']));
+    }
+    unset($pc);
 
     $totalEventos = count($eventosComDisponiveis);
 
@@ -303,19 +297,22 @@ require __DIR__ . '/includes/header.php';
 
   <?php if ($aba === 'colaborador'): ?>
     <?php if (!$porColaborador): ?>
-      <div class="card"><p class="muted">Nenhum registro de indisponibilidade encontrado nesse período.</p></div>
+      <div class="card"><p class="muted">Nenhum evento encontrado nesse período.</p></div>
     <?php endif; ?>
     <?php foreach ($porColaborador as $grupo): ?>
     <div class="card hist-grupo">
-      <h2 class="nivel-<?= e($grupo['nivel']) ?>"><?= e($grupo['nome']) ?> <span class="badge ok"><?= count($grupo['itens']) ?></span></h2>
+      <h2 class="nivel-<?= e($grupo['nivel']) ?>"><?= e($grupo['nome']) ?> <span class="badge ok"><?= count($grupo['itens']) ?> disponível(is)</span></h2>
+      <?php if ($grupo['itens']): ?>
       <ul class="hist-lista">
         <?php foreach ($grupo['itens'] as $it): ?>
         <li>
-          <span class="hist-evt"><?= e($it['evento']) ?> · <?= date('d/m/Y', strtotime($it['data_evento'])) ?></span>
-          <span class="hist-quando">Registrado em <?= date('d/m/Y H:i', strtotime($it['criado_em'])) ?></span>
+          <span class="hist-evt"><?= e($it['evento']) ?> · <?= date('d/m/Y', strtotime($it['data_evento'])) ?><?php if ($it['horario']): ?> · ⏰ <?= substr($it['horario'],0,5) ?><?php endif; ?></span>
         </li>
         <?php endforeach; ?>
       </ul>
+      <?php else: ?>
+        <p class="muted" style="margin:.3rem 0 0;font-size:.85rem">Não está disponível para nenhum evento nesse período.</p>
+      <?php endif; ?>
     </div>
     <?php endforeach; ?>
   <?php endif; ?>
