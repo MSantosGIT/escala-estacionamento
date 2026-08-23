@@ -5,7 +5,8 @@
 //   1. Eventos com 3+ colaboradores exigem: 1 A1, 1+ A2, 1+ A3
 //   2. Eventos com 1 ou 2 colaboradores NÃO escalam A1 (só A2 e A3),
 //      exceto quando o evento marca "exige A1".
-//   3. Preferência de 1 evento por colaborador no mês
+//   3. Limite de 1 evento por colaborador no mês (regra rígida — quem já
+//      foi escalado no mês some da fila até o próximo mês)
 //   4. Prioriza quem está há mais tempo sem ser escalado
 //   5. Respeita disponibilidade por tipo de dia (dias de semana / sábado / domingo)
 //   6. Grava histórico em escala_colaboradores
@@ -33,16 +34,23 @@ function ultimaEscalaPorColaborador(PDO $pdo): array {
 
 /**
  * Quantos eventos cada colaborador já tem no mês/ano informados.
+ * $excetoEscalaId (opcional): ignora a contagem do próprio evento sendo
+ * gerado agora, para não travar a regeneração de um evento que a pessoa
+ * já estava escalada nele mesmo.
  */
-function escalasNoMes(PDO $pdo, int $mes, int $ano): array {
-    $st = $pdo->prepare(
-        "SELECT ec.colaborador_id, COUNT(*) AS qtd
-         FROM escala_colaboradores ec
-         JOIN escalas es ON es.id = ec.escala_id
-         WHERE es.mes = ? AND es.ano = ?
-         GROUP BY ec.colaborador_id"
-    );
-    $st->execute([$mes, $ano]);
+function escalasNoMes(PDO $pdo, int $mes, int $ano, ?int $excetoEscalaId = null): array {
+    $sql = "SELECT ec.colaborador_id, COUNT(*) AS qtd
+            FROM escala_colaboradores ec
+            JOIN escalas es ON es.id = ec.escala_id
+            WHERE es.mes = ? AND es.ano = ?";
+    $params = [$mes, $ano];
+    if ($excetoEscalaId !== null) {
+        $sql .= " AND es.id <> ?";
+        $params[] = $excetoEscalaId;
+    }
+    $sql .= " GROUP BY ec.colaborador_id";
+    $st = $pdo->prepare($sql);
+    $st->execute($params);
     $out = [];
     foreach ($st as $r) {
         $out[(int)$r['colaborador_id']] = (int)$r['qtd'];
@@ -101,7 +109,13 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
     $tipoDia  = $diaSem === 0 ? 'domingo' : ($diaSem === 6 ? 'sabado' : 'semana');
 
     $ultima = ultimaEscalaPorColaborador($pdo);
-    $noMes  = escalasNoMes($pdo, (int)$escala['mes'], (int)$escala['ano']);
+    // conta eventos do mês SEM contar o próprio evento sendo gerado agora
+    // (evita travar a regeneração de um evento em que a pessoa já estava)
+    $noMes  = escalasNoMes($pdo, (int)$escala['mes'], (int)$escala['ano'], $escalaId);
+
+    // quem já tem 1+ evento no mês fica de fora desta rodada (vai para o
+    // final da fila): impede que a mesma pessoa apareça 2x no mês.
+    $jaNoMes = array_keys(array_filter($noMes, fn($qtd) => $qtd >= 1));
 
     // colaboradores que marcaram indisponibilidade neste evento
     $stInd = $pdo->prepare("SELECT colaborador_id FROM indisponibilidades WHERE escala_id = ?");
@@ -109,7 +123,7 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
     $indispon = array_map('intval', array_column($stInd->fetchAll(), 'colaborador_id'));
 
     $selecionados = [];   // colaborador_id => nivel
-    $jaUsados     = [];
+    $jaUsados     = $jaNoMes;   // começa já excluindo quem foi escalado em outro evento do mês
     $faltas       = [];
 
     $precisaComposicao = ($num >= 3);
