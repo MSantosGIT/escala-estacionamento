@@ -61,20 +61,20 @@ if ($meuColabId) {
     $minhasEscalas = $st->fetchAll();
 }
 
-// ---- admin: pendências de confirmação ----
+// ---- admin: equipe escalada dos eventos futuros (pendentes primeiro) ----
 $pendentes = [];
 if ($ehAdm) {
     $st = $pdo->query(
       "SELECT e.id AS escala_id, e.evento, e.data_evento, e.horario_chegada,
-              c.nome AS colaborador_nome, c.nivel, c.celular
+              c.nome AS colaborador_nome, c.nivel, c.celular,
+              cf.confirmado_em
        FROM escala_colaboradores ec
        JOIN escalas e ON e.id = ec.escala_id
        JOIN colaboradores c ON c.id = ec.colaborador_id
        LEFT JOIN escala_confirmacoes cf
               ON cf.escala_id = e.id AND cf.colaborador_id = ec.colaborador_id
        WHERE e.data_evento >= CURDATE()
-         AND cf.id IS NULL
-       ORDER BY e.data_evento, e.horario_chegada, c.nome"
+       ORDER BY e.data_evento, e.horario_chegada, (cf.id IS NULL) DESC, c.nome"
     );
     foreach ($st->fetchAll() as $p) {
         $pendentes[(int)$p['escala_id']]['evento'] = $p;
@@ -143,17 +143,19 @@ require __DIR__ . '/includes/header.php';
 <?php endif; ?>
 
 <?php if ($ehAdm): ?>
-<h2 style="color:var(--laranja-6);margin:1.8rem 0 .3rem">Pendentes de confirmação</h2>
-<p class="page-sub" style="margin-bottom:1rem">Colaboradores escalados que ainda não deram o ciente (eventos futuros).</p>
+<h2 style="color:var(--laranja-6);margin:1.8rem 0 .3rem">Confirmações dos eventos futuros</h2>
+<p class="page-sub" style="margin-bottom:1rem">Equipe escalada dos próximos eventos. Quem já deu o ciente aparece com <strong style="color:#2f7d49">✓ verde</strong>.</p>
 
 <?php if (!$pendentes): ?>
-  <div class="card"><p class="muted">🎉 Todos os escalados já confirmaram os eventos futuros.</p></div>
+  <div class="card"><p class="muted">Nenhum evento futuro com equipe escalada.</p></div>
 <?php else: ?>
   <?php foreach ($pendentes as $eid => $grupo):
     $ev = $grupo['evento'];
     $inicio = strtotime($ev['data_evento'] . ' ' . $ev['horario_chegada']);
     $horasFaltando = ($inicio - time()) / 3600;
     $urgente = $horasFaltando <= 48;
+    $totalItens   = count($grupo['itens']);
+    $totalPend    = count(array_filter($grupo['itens'], fn($i) => empty($i['confirmado_em'])));
   ?>
   <div class="card <?= $urgente ? 'card-urgente' : '' ?>" style="margin-bottom:1rem">
     <div class="flex-between" style="flex-wrap:wrap;gap:.5rem">
@@ -163,13 +165,22 @@ require __DIR__ . '/includes/header.php';
           — <?= date('d/m/Y', $inicio) ?> ⏰ <?= substr($ev['horario_chegada'],0,5) ?>
         </span>
       </h3>
-      <span class="badge <?= $urgente ? 'warn' : 'ok' ?>">
-        <?= count($grupo['itens']) ?> pendente(s)<?= $urgente ? ' · menos de 48h!' : '' ?>
-      </span>
+      <?php if ($totalPend === 0): ?>
+        <span class="badge ok">🎉 Todos confirmaram (<?= $totalItens ?>/<?= $totalItens ?>)</span>
+      <?php else: ?>
+        <span class="badge <?= $urgente ? 'warn' : 'ok' ?>">
+          <?= $totalPend ?> pendente(s) de <?= $totalItens ?><?= $urgente ? ' · menos de 48h!' : '' ?>
+        </span>
+      <?php endif; ?>
     </div>
     <ul class="pend-lista">
       <?php foreach ($grupo['itens'] as $p): ?>
-      <li>
+      <li class="<?= !empty($p['confirmado_em']) ? 'conf-ok' : '' ?>">
+        <?php if (!empty($p['confirmado_em'])): ?>
+          <span class="pend-aceito" title="Ciente dado em <?= date('d/m/Y H:i', strtotime($p['confirmado_em'])) ?>">✓</span>
+        <?php else: ?>
+          <span class="pend-aguarda" title="Aguardando ciente">⏳</span>
+        <?php endif; ?>
         <span class="pend-nome nivel-<?= e($p['nivel']) ?>"><?= e($p['colaborador_nome']) ?></span>
         <?php if (!empty($p['celular'])): ?>
           <span class="pend-cel"><?= e($p['celular']) ?></span>
@@ -207,6 +218,11 @@ require __DIR__ . '/includes/header.php';
 .pend-nome{font-weight:600;flex:1}
 .pend-cel{color:var(--texto-suave);font-size:.83rem}
 .nivel-lider{color:#9a4f12}.nivel-pleno{color:#1f6b86}.nivel-junior{color:#2f7d49}
+.pend-lista li.conf-ok .pend-nome{opacity:.75}
+.pend-aceito{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;
+  border-radius:50%;background:#dff3e3;color:#2f7d49;font-weight:800;font-size:.85rem;flex:none}
+.pend-aguarda{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;
+  flex:none;font-size:.8rem;opacity:.55}
 </style>
 
 <?php require __DIR__ . '/includes/footer.php'; ?>
