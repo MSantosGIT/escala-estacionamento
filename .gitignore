@@ -2,3 +2,4 @@ config/db.php
 uploads/
 seed.php
 *.log
+CONTEXTO_LOCAL.md
