@@ -123,9 +123,17 @@ table.matriz{width:100%;border-collapse:collapse;font-size:.9rem}
 table.matriz th,table.matriz td{border:1px solid var(--borda);padding:.5rem .45rem;text-align:center}
 table.matriz thead th{background:var(--laranja-2);color:var(--laranja-6);font-size:.78rem;text-transform:uppercase;letter-spacing:.3px}
 table.matriz th.mes-atual{background:var(--laranja-3)}
-.col-n{width:34px;color:var(--texto-suave)}
-.col-nome{text-align:left!important;white-space:nowrap;font-weight:600;color:var(--texto)}
-.col-niv{width:64px}
+.col-n{width:34px;min-width:34px;max-width:34px;color:var(--texto-suave)}
+.col-nome{width:180px;min-width:180px;max-width:180px;text-align:left!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--texto)}
+.col-niv{width:64px;min-width:64px;max-width:64px}
+
+/* colunas fixas: nome/nível sempre visíveis ao rolar horizontalmente (celular) */
+table.matriz th.col-n,table.matriz td.col-n{position:sticky;left:0;z-index:1}
+table.matriz th.col-nome,table.matriz td.col-nome{position:sticky;left:34px;z-index:1}
+table.matriz th.col-niv,table.matriz td.col-niv{position:sticky;left:214px;z-index:1;box-shadow:inset -1px 0 0 var(--borda)}
+table.matriz tbody td.col-n,table.matriz tbody td.col-nome,table.matriz tbody td.col-niv{background:var(--branco)}
+table.matriz thead th.col-n,table.matriz thead th.col-nome,table.matriz thead th.col-niv{background:var(--laranja-2);z-index:2}
+table.matriz tr:hover td.col-n,table.matriz tr:hover td.col-nome,table.matriz tr:hover td.col-niv{background:var(--laranja-1)}
 .col-tot{background:var(--laranja-1);font-size:1rem}
 td.num{font-variant-numeric:tabular-nums}
 td.num.zero{background:#fae0e0;color:#c0392b;font-weight:700}
@@ -145,6 +153,9 @@ tr.rodape td{background:var(--laranja-2);color:var(--laranja-6)}
   .page-title,.page-sub,form{display:none!important}
   table.matriz{font-size:.72rem}
   table.matriz th,table.matriz td{padding:.3rem .25rem}
+  table.matriz th.col-n,table.matriz td.col-n,
+  table.matriz th.col-nome,table.matriz td.col-nome,
+  table.matriz th.col-niv,table.matriz td.col-niv{position:static;left:auto;z-index:auto;box-shadow:none}
 }
 </style>
 <?php require __DIR__ . '/includes/footer.php'; ?>
