@@ -91,7 +91,10 @@ require __DIR__ . '/includes/header.php';
       </div>
       <div class="ev-corpo">
         <div class="ev-nome"><?= e($ev['evento']) ?></div>
-        <div class="ev-horario">⏰ <?= substr($ev['horario_chegada'],0,5) ?></div>
+        <div class="ev-horario">
+          ⏰ <?= substr($ev['horario_chegada'],0,5) ?> ·
+          <span class="ev-vagas">👥 <?= (int)$ev['num_colaboradores'] ?> <?= (int)$ev['num_colaboradores'] > 1 ? 'colaboradores' : 'colaborador' ?></span>
+        </div>
       </div>
     </div>
     <?php if ($equipe): ?>
@@ -142,6 +145,8 @@ require __DIR__ . '/includes/header.php';
 .ev-corpo{flex:1}
 .ev-nome{font-weight:700;color:var(--laranja-6);font-size:1.05rem;margin-bottom:.2rem}
 .ev-horario{font-size:.85rem;color:var(--texto-suave)}
+.ev-vagas{display:inline-block;background:#fff;border:1px solid var(--laranja-3);
+  border-radius:20px;padding:.05rem .55rem;font-weight:700;color:var(--laranja-6);font-size:.8rem}
 
 .ev-equipe{list-style:none;padding:0;margin:.6rem 0 0;
   border-top:1px solid var(--laranja-3);padding-top:.55rem;flex:1}
