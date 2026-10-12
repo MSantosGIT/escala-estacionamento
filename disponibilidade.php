@@ -111,7 +111,7 @@ require __DIR__ . '/includes/header.php';
         </tbody>
       </table>
       <?php if ($prazo): ?>
-        <button class="btn" style="margin-top:1rem">Salvar indisponibilidade</button>
+        <button class="btn" style="margin-top:1rem">Salvar disponibilidade</button>
       <?php endif; ?>
     </form>
     <?php endif; ?>

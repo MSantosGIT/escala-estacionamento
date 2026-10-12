@@ -173,7 +173,7 @@ require __DIR__ . '/includes/header.php';
       <?php if (!array_filter($eventosPorDia)): ?>
         <p class="muted" style="margin-top:1rem">Nenhum evento cadastrado neste mês. Crie os eventos em Escalas (ou use “Gerar mês seguinte”).</p>
       <?php else: ?>
-        <button class="btn" style="margin-top:1rem">Salvar indisponibilidade</button>
+        <button class="btn" style="margin-top:1rem">Salvar disponibilidade</button>
       <?php endif; ?>
     </div>
   </form>
