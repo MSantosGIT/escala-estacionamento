@@ -93,11 +93,11 @@ $semanas    = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 $meses = [1=>'Janeiro',2=>'Fevereiro',3=>'Março',4=>'Abril',5=>'Maio',6=>'Junho',
           7=>'Julho',8=>'Agosto',9=>'Setembro',10=>'Outubro',11=>'Novembro',12=>'Dezembro'];
 
-$titulo = 'Indisponibilidade (Admin)';
+$titulo = 'Ajustar disponibilidade (Admin)';
 require __DIR__ . '/includes/header.php';
 ?>
-<h1 class="page-title">Indisponibilidade por colaborador</h1>
-<p class="page-sub">Selecione o colaborador e clique nos eventos em que ele estará indisponível.</p>
+<h1 class="page-title">Ajustar disponibilidade</h1>
+<p class="page-sub">Selecione o colaborador e marque os eventos em que ele NÃO poderá servir.</p>
 
 <div class="card">
   <form method="get" style="display:flex;gap:.8rem;align-items:flex-end;flex-wrap:wrap">
@@ -134,7 +134,7 @@ require __DIR__ . '/includes/header.php';
     <div class="card">
       <div class="flex-between">
         <h2><?= $meses[$mes] ?> / <?= $ano ?></h2>
-        <span class="muted">Clique nos dias com evento para marcar indisponibilidade</span>
+        <span class="muted">Clique em um evento para marcar ou desmarcar a indisponibilidade</span>
       </div>
 
       <table class="cal-adm">
@@ -159,7 +159,7 @@ require __DIR__ . '/includes/header.php';
                     <input type="checkbox" name="indisponivel[]" value="<?= $ev['id'] ?>" <?= $marc?'checked':'' ?> class="ev-check">
                     <span class="ev-nome"><?= e($ev['evento']) ?></span>
                     <span class="ev-hora"><?= substr($ev['horario_chegada'],0,5) ?></span>
-                    <span class="ev-tag"><?= $marc?'indisponível':'disponível' ?></span>
+                    <span class="ev-tag <?= $marc?'':'oculto' ?>">Indisponível</span>
                   </div>
                 <?php endforeach; ?>
               </td>
@@ -213,7 +213,8 @@ require __DIR__ . '/includes/header.php';
 .ev-chip .ev-nome{display:block;font-weight:700;color:var(--laranja-6);font-size:.72rem;line-height:1.1}
 .ev-chip .ev-hora{display:block;font-size:.68rem;color:var(--texto-suave)}
 .ev-chip .ev-tag{display:inline-block;margin-top:.15rem;font-size:.64rem;font-weight:600;
-  color:#3c7b4c;background:#dff3e3;border-radius:10px;padding:.05rem .4rem}
+  color:#a83b3b;background:#f6cccc;border-radius:10px;padding:.05rem .4rem}
+.ev-chip .ev-tag.oculto{display:none}
 .ev-chip.ind{background:#fbe1e1;border-color:#e7a3a3}
 .ev-chip.ind .ev-nome{color:#a83b3b}
 .ev-chip.ind .ev-tag{color:#a83b3b;background:#f6cccc}
@@ -229,7 +230,7 @@ document.querySelectorAll('.ev-chip').forEach(chip=>{
   function sync(){
     chip.classList.toggle('ind', inp.checked);
     const tag = chip.querySelector('.ev-tag');
-    if (tag) tag.textContent = inp.checked ? 'indisponível' : 'disponível';
+    if (tag) tag.classList.toggle('oculto', !inp.checked);
   }
   chip.addEventListener('click', e=>{
     if (e.target.tagName !== 'INPUT') { inp.checked = !inp.checked; }

@@ -106,7 +106,7 @@ if ('serviceWorker' in navigator) {
 
         navGroup('escala-admin', 'Escala (Admin)', '🛠️', [
           ['admin_escala.php', '🛠️', 'Ajustar escala'],
-          ['admin_indisponibilidade.php', '🚫', 'Indisponibilidade'],
+          ['admin_indisponibilidade.php', '🚫', 'Ajustar disponibilidade'],
           ['disponiveis.php', '🟢', 'Disponíveis'],
           ['checklist_itens.php', '📋', 'Checklist'],
         ], $pg);

@@ -210,11 +210,12 @@ function ajudaConteudo(): array {
         ],
 
         'admin_indisponibilidade.php' => [
-            'titulo' => '🚫 Indisponibilidade (Admin)',
-            'intro'  => 'Veja e gerencie as indisponibilidades de todos os colaboradores.',
+            'titulo' => '🚫 Ajustar disponibilidade (Admin)',
+            'intro'  => 'Gerencie a disponibilidade de cada colaborador para os eventos (mesmo recurso da tela "Minha disponibilidade", na visão do admin).',
             'passos' => [
-                'Consulte quem está indisponível em cada data antes de gerar a escala.',
-                'Você pode remover uma indisponibilidade em nome do colaborador, se necessário.',
+                'Selecione o colaborador e marque os eventos em que ele NÃO poderá servir.',
+                'Eventos sem marcação indicam que o colaborador está disponível.',
+                'Após alterar, use "Regerar escala do mês" para aplicar as mudanças.',
             ],
         ],
 
