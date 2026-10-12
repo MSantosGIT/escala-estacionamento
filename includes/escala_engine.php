@@ -59,6 +59,53 @@ function escalasNoMes(PDO $pdo, int $mes, int $ano, ?int $excetoEscalaId = null)
 }
 
 /**
+ * Quantos eventos cada colaborador já tem no SEMESTRE/ano informados.
+ * Semestre = 1 (jan–jun) ou 2 (jul–dez)
+ */
+function escalasNoSemestre(PDO $pdo, int $mes, int $ano, ?int $excetoEscalaId = null): array {
+    $sem = ($mes <= 6) ? 1 : 2;
+    $iniMes = ($sem === 1) ? 1 : 7;
+    $fimMes = ($sem === 1) ? 6 : 12;
+    $sql = "SELECT ec.colaborador_id, COUNT(*) AS qtd
+            FROM escala_colaboradores ec
+            JOIN escalas es ON es.id = ec.escala_id
+            WHERE es.ano = ? AND es.mes BETWEEN ? AND ?";
+    $params = [$ano, $iniMes, $fimMes];
+    if ($excetoEscalaId !== null) {
+        $sql .= " AND es.id <> ?";
+        $params[] = $excetoEscalaId;
+    }
+    $sql .= " GROUP BY ec.colaborador_id";
+    $st = $pdo->prepare($sql);
+    $st->execute($params);
+    $out = [];
+    foreach ($st as $r) {
+        $out[(int)$r['colaborador_id']] = (int)$r['qtd'];
+    }
+    return $out;
+}
+
+function escalasNoAno(PDO $pdo, int $ano, ?int $excetoEscalaId = null): array {
+    $sql = "SELECT ec.colaborador_id, COUNT(*) AS qtd
+            FROM escala_colaboradores ec
+            JOIN escalas es ON es.id = ec.escala_id
+            WHERE es.ano = ?";
+    $params = [$ano];
+    if ($excetoEscalaId !== null) {
+        $sql .= " AND es.id <> ?";
+        $params[] = $excetoEscalaId;
+    }
+    $sql .= " GROUP BY ec.colaborador_id";
+    $st = $pdo->prepare($sql);
+    $st->execute($params);
+    $out = [];
+    foreach ($st as $r) {
+        $out[(int)$r['colaborador_id']] = (int)$r['qtd'];
+    }
+    return $out;
+}
+
+/**
  * Seleciona colaboradores de um nível, ordenando por:
  *   1) menos eventos no mês (preferência de 1/mês)
  *   2) mais tempo sem ser escalado
@@ -84,15 +131,71 @@ function candidatos(PDO $pdo, string $nivel, string $tipoDia, array $jaEscalados
 
 /**
  * Ordena uma lista de ids de colaboradores pela política de prioridade.
+ * Critério:
+ * 1) menos eventos no mês
+ * 2) menos eventos no semestre
+ * 3) menos eventos no ano
+ * 4) mais tempo sem ser escalado (última escala mais antiga)
+ * 5) ordem_padrao ASC, NULLS LAST
+ * 6) nome ASC (case-insensitive)
+ * 7) id ASC (fallback determinístico)
  */
-function ordenarPorPrioridade(array $ids, array $ultima, array $noMes): array {
-    usort($ids, function ($a, $b) use ($ultima, $noMes) {
+function ordenarPorPrioridade(
+    array $ids,
+    array $ultima,      // id => 'Y-m-d'
+    array $noMes,       // id => qtd
+    array $noSem,       // id => qtd
+    array $noAno,       // id => qtd
+    array $ordemPadrao, // id => int|null
+    array $nomes        // id => string
+): array {
+    usort($ids, function ($a, $b) use ($ultima, $noMes, $noSem, $noAno, $ordemPadrao, $nomes) {
         $ma = $noMes[$a] ?? 0;
         $mb = $noMes[$b] ?? 0;
-        if ($ma !== $mb) return $ma <=> $mb;          // menos eventos no mês primeiro
+        if ($ma !== $mb) {
+            return $ma <=> $mb; // 1) menos no mês
+        }
+
+        $sa = $noSem[$a] ?? 0;
+        $sb = $noSem[$b] ?? 0;
+        if ($sa !== $sb) {
+            return $sa <=> $sb; // 2) menos no semestre
+        }
+
+        $ya = $noAno[$a] ?? 0;
+        $yb = $noAno[$b] ?? 0;
+        if ($ya !== $yb) {
+            return $ya <=> $yb; // 3) menos no ano
+        }
+
         $ua = $ultima[$a] ?? '1900-01-01';
         $ub = $ultima[$b] ?? '1900-01-01';
-        return strcmp($ua, $ub);                        // mais antigo primeiro
+        if ($ua !== $ub) {
+            return strcmp($ua, $ub); // 4) mais tempo sem escalar (mais antigo primeiro)
+        }
+
+        // 5) ordem padrão do colaborador (NULLS LAST)
+        $opa = $ordemPadrao[$a] ?? null;
+        $opb = $ordemPadrao[$b] ?? null;
+        $naNull = ($opa === null);
+        $nbNull = ($opb === null);
+        if ($naNull !== $nbNull) {
+            return $naNull <=> $nbNull; // null vai por último
+        }
+        if ($opa !== null && $opb !== null && $opa !== $opb) {
+            return $opa <=> $opb; // menor número = vem antes
+        }
+
+        // 6) nome ASC (case-insensitive)
+        $na = $nomes[$a] ?? '';
+        $nb = $nomes[$b] ?? '';
+        $cmp = strcasecmp($na, $nb);
+        if ($cmp !== 0) {
+            return $cmp;
+        }
+
+        // 7) fallback por ID
+        return $a <=> $b;
     });
     return $ids;
 }
@@ -112,6 +215,16 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
     // conta eventos do mês SEM contar o próprio evento sendo gerado agora
     // (evita travar a regeneração de um evento em que a pessoa já estava)
     $noMes  = escalasNoMes($pdo, (int)$escala['mes'], (int)$escala['ano'], $escalaId);
+    $noSem  = escalasNoSemestre($pdo, (int)$escala['mes'], (int)$escala['ano'], $escalaId);
+    $noAno  = escalasNoAno($pdo, (int)$escala['ano'], $escalaId);
+
+    // mapas para desempate determinístico
+    $opMap = [];
+    $nmMap = [];
+    foreach ($pdo->query("SELECT id, ordem_padrao, nome FROM colaboradores WHERE ativo=1") as $rc) {
+        $opMap[(int)$rc['id']] = ($rc['ordem_padrao'] === null ? null : (int)$rc['ordem_padrao']);
+        $nmMap[(int)$rc['id']] = (string)$rc['nome'];
+    }
 
     // quem já tem 1+ evento no mês fica de fora desta rodada (vai para o
     // final da fila): impede que a mesma pessoa apareça 2x no mês.
@@ -130,7 +243,7 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
 
     // ---- 1) Garantir composição mínima para eventos de 3+ ----
     if ($precisaComposicao || $exigeL) {
-        $lid = ordenarPorPrioridade(candidatos($pdo, 'lider', $tipoDia, $jaUsados, $indispon), $ultima, $noMes);
+        $lid = ordenarPorPrioridade(candidatos($pdo, 'lider', $tipoDia, $jaUsados, $indispon), $ultima, $noMes, $noSem, $noAno, $opMap, $nmMap);
         if (empty($lid)) {
             if (!$parcial) return ['ok' => false, 'msg' => 'Sem A1 disponível para ' . $escala['evento'] . ' em ' . $escala['data_evento']];
             $faltas[] = 'A1';
@@ -141,7 +254,7 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
     }
 
     if ($precisaComposicao) {
-        $ple = ordenarPorPrioridade(candidatos($pdo, 'pleno', $tipoDia, $jaUsados, $indispon), $ultima, $noMes);
+        $ple = ordenarPorPrioridade(candidatos($pdo, 'pleno', $tipoDia, $jaUsados, $indispon), $ultima, $noMes, $noSem, $noAno, $opMap, $nmMap);
         if (empty($ple)) {
             if (!$parcial) return ['ok' => false, 'msg' => 'Sem A2 disponível para ' . $escala['evento'] . ' em ' . $escala['data_evento']];
             $faltas[] = 'A2';
@@ -150,7 +263,7 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
             $jaUsados[] = $ple[0];
         }
 
-        $jun = ordenarPorPrioridade(candidatos($pdo, 'junior', $tipoDia, $jaUsados, $indispon), $ultima, $noMes);
+        $jun = ordenarPorPrioridade(candidatos($pdo, 'junior', $tipoDia, $jaUsados, $indispon), $ultima, $noMes, $noSem, $noAno, $opMap, $nmMap);
         if (empty($jun)) {
             if (!$parcial) return ['ok' => false, 'msg' => 'Sem A3 disponível para ' . $escala['evento'] . ' em ' . $escala['data_evento']];
             $faltas[] = 'A3';
@@ -174,7 +287,7 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
             }
         }
         if (empty($pool)) break;
-        $ord = ordenarPorPrioridade(array_keys($pool), $ultima, $noMes);
+        $ord = ordenarPorPrioridade(array_keys($pool), $ultima, $noMes, $noSem, $noAno, $opMap, $nmMap);
         $escolhido = $ord[0];
         $selecionados[$escolhido] = $pool[$escolhido];
         $jaUsados[] = $escolhido;
@@ -297,7 +410,16 @@ function gerarEscalaDoMes(PDO $pdo, int $mes, int $ano, bool $incluirPreenchidas
     $eventos = $st->fetchAll();
 
     $completas = 0; $parciais = 0; $avisos = [];
+    $chkManual = $pdo->prepare("SELECT COUNT(*) FROM escala_colaboradores WHERE escala_id=? AND posicao IS NOT NULL");
     foreach ($eventos as $ev) {
+        $eid = (int)$ev['id'];
+        if ($incluirPreenchidas) {
+            // Preserva eventos com ordem manual por evento (posicao definida)
+            $chkManual->execute([$eid]);
+            if ((int)$chkManual->fetchColumn() > 0) {
+                continue; // não sobrescreve ajustes manuais
+            }
+        }
         $r = gerarEscalaEvento($pdo, $ev, true); // modo parcial
         if ($r['ok'] && !empty($r['completa'])) $completas++;
         elseif ($r['ok']) { $parciais++; $avisos[] = $r['msg']; }
