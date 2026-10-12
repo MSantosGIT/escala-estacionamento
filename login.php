@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="apple-mobile-web-app-title" content="Apoio Externo">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
 <link rel="icon" href="assets/icons/favicon.png" type="image/png">
-<link rel="stylesheet" href="assets/css/style.css?v=15">
+<link rel="stylesheet" href="assets/css/style.css?v=16">
 <script>
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
@@ -100,6 +100,7 @@ if ('serviceWorker' in navigator) {
   <span class="rd-desktop">Desenvolvedor <strong>Marielton M Santos</strong> · WhatsApp </span>
   <span class="rd-mobile">Desenvolvedor: <strong>M Santos</strong> </span>
   <a href="https://wa.me/5561999116077" target="_blank" rel="noopener">(61) 99911-6077</a>
+  <span class="rd-versao">Versão <?= e(appVersao()) ?></span>
 </footer>
 </body>
 </html>

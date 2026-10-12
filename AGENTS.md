@@ -31,6 +31,18 @@ alertas e relatório anual.
   Backup: `/etc/php/8.4/apache2/php.ini.bak-20261011`. Após alterar, `systemctl reload apache2`.
   Local (XAMPP) usa 512M e não reproduz o problema.
 
+## Controle de versão
+
+- A versão da aplicação fica no arquivo `VERSION` (raiz do projeto, texto simples,
+  ex.: `1.1.0`) e é lida em runtime por `appVersao()` (`includes/functions.php`).
+- É exibida no **rodapé da tela de login** (`login.php`) e no rodapé interno
+  (`includes/footer.php`) como **“Versão X.Y.Z”**, permitindo conferir qual versão
+  está publicada em cada ambiente.
+- **Bump obrigatório** de `VERSION` em cada alteração publicada (seguir SemVer:
+  MAJOR.MINOR.PATCH), antes do `git commit`. Assim basta olhar o login em produção
+  para confirmar se o `git pull` aplicou a versão esperada.
+- Se a versão exibida for `dev`, o arquivo `VERSION` não foi encontrado no deploy.
+
 ## Banco de dados
 
 - Schema base em `database.sql` + migrations `migration_*.sql` (todas idempotentes).

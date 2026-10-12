@@ -72,6 +72,20 @@ function e(?string $v): string {
     return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8');
 }
 
+/**
+ * Versão do sistema em execução, lida do arquivo VERSION na raiz do projeto.
+ * Sirva para confirmar qual versão está publicada em cada ambiente
+ * (local ≡ GitHub ≡ produção). Bump manual a cada deploy.
+ */
+function appVersao(): string {
+    static $versao = null;
+    if ($versao !== null) return $versao;
+    $arquivo = __DIR__ . '/../VERSION';
+    $v = is_file($arquivo) ? trim((string)@file_get_contents($arquivo)) : '';
+    $versao = $v !== '' ? $v : 'dev';
+    return $versao;
+}
+
 function redirect(string $url): void {
     header('Location: ' . $url);
     exit;

@@ -243,6 +243,7 @@ tr:hover td{background:var(--laranja-1)}
   .rodape-dev .rd-full{display:none}
 }
 .rodape-dev strong{color:var(--laranja-6)}
+.rodape-dev .rd-versao{margin-left:.5rem;color:var(--laranja-6);font-weight:600;white-space:nowrap}
 .rodape-dev a{color:var(--laranja-6);text-decoration:none;font-weight:600;white-space:nowrap}
 .rodape-dev a:hover{text-decoration:underline}
 /* alterna texto do rodapé: completo no desktop, curto no celular */
