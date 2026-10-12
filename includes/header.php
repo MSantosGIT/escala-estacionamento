@@ -69,7 +69,7 @@ if ('serviceWorker' in navigator) {
       navItem('confirmar_escala.php', '✔️', 'Confirmar escala', $pg);
       navItem('busca.php', '🔍', 'Buscar veículo', $pg);
 
-      navGroup('escala', 'Escala', '📋', [
+      navGroup('escala', 'Escala e Evento', '📋', [
         ['escalas.php', '📋', 'Escalas'],
         ['calendario.php', '📅', 'Calendário'],
         ['lista_eventos.php', '🎫', 'Eventos'],
