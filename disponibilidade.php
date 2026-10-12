@@ -95,12 +95,12 @@ require __DIR__ . '/includes/header.php';
     <form method="post">
       <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
       <table>
-        <thead><tr><th>Data</th><th>Evento</th><th>Chegada</th><th class="right">Não estarei disponível</th></tr></thead>
+        <thead><tr><th>Data</th><th>Evento</th><th>Chegada</th><th class="right th-indisponivel">Não estarei disponível</th></tr></thead>
         <tbody>
         <?php foreach ($eventos as $ev):
           $marc = in_array((int)$ev['id'], $jaMarcados, true); ?>
           <tr>
-            <td><?= date('d/m', strtotime($ev['data_evento'])) ?><br><span class="muted"><?= ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][date('w',strtotime($ev['data_evento']))] ?></span></td>
+            <td class="data-evento"><span class="data-badge"><?= date('d/m', strtotime($ev['data_evento'])) ?></span><span class="dia-sem"><?= ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][date('w',strtotime($ev['data_evento']))] ?></span></td>
             <td><?= e($ev['evento']) ?></td>
             <td><?= substr($ev['horario_chegada'],0,5) ?></td>
             <td class="right">
@@ -121,4 +121,13 @@ require __DIR__ . '/includes/header.php';
     <p class="muted">Eventos não marcados significam que você está disponível. A escala é montada automaticamente após o dia 20, respeitando as marcações de todos e as regras de composição (A1, A2 e A3).</p>
   </div>
 <?php endif; ?>
+
+<style>
+.data-evento{white-space:nowrap}
+.data-evento .data-badge{display:inline-block;background:linear-gradient(120deg,var(--laranja-5),var(--laranja-4));
+  color:#fff;font-weight:800;font-size:.95rem;border-radius:8px;padding:.2rem .55rem;letter-spacing:.3px;
+  box-shadow:0 2px 6px rgba(200,106,43,.25)}
+.data-evento .dia-sem{display:block;margin-top:.15rem;font-size:.72rem;font-weight:700;color:var(--texto-suave)}
+.th-indisponivel{color:var(--laranja-5);font-weight:800;font-size:.9rem}
+</style>
 <?php require __DIR__ . '/includes/footer.php'; ?>

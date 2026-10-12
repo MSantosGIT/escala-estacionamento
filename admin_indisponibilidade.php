@@ -134,7 +134,7 @@ require __DIR__ . '/includes/header.php';
     <div class="card">
       <div class="flex-between">
         <h2><?= $meses[$mes] ?> / <?= $ano ?></h2>
-        <span class="muted">Clique em um evento para marcar ou desmarcar a indisponibilidade</span>
+        <span class="cal-adm-hint">Clique em um evento para marcar ou desmarcar a indisponibilidade</span>
       </div>
 
       <table class="cal-adm">
@@ -206,6 +206,9 @@ require __DIR__ . '/includes/header.php';
 .cal-adm td.vazio{background:var(--laranja-1)}
 .cal-adm td.tem-ev{background:#fffaf4}
 .dnum{font-weight:700;color:var(--texto-suave);font-size:.8rem;margin-bottom:.25rem}
+.cal-adm-hint{color:var(--laranja-5);font-weight:800;font-size:.9rem}
+.cal-adm td.tem-ev .dnum{display:inline-block;background:linear-gradient(120deg,var(--laranja-5),var(--laranja-4));
+  color:#fff;font-weight:800;border-radius:7px;padding:.05rem .45rem;box-shadow:0 2px 6px rgba(200,106,43,.25)}
 .ev-chip{display:block;cursor:pointer;border:1px solid var(--laranja-3);background:var(--laranja-1);
   border-radius:8px;padding:.3rem .4rem;margin-bottom:.3rem;transition:.12s;user-select:none}
 .ev-check{display:none}
