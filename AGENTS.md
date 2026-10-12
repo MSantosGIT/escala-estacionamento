@@ -25,6 +25,11 @@ alertas e relatório anual.
 - **Produção:** VPS `45.164.243.235` — Debian 13, Apache, PHP 8.4, MariaDB 11.8.
   Site: `/var/www/instituto/public_html/escala` → `https://apoioexterno.mooo.com/escala`.
   Banco `escala_estacionamento` (usuário próprio; senha no `config/db.php` do servidor).
+- **PHP de produção (limites de upload):** `/etc/php/8.4/apache2/php.ini`.
+  Em 11/10/2026 subiram de `upload_max_filesize` 2M→**10M** e `post_max_size` 8M→**20M**
+  (fotos do evento/veículo acima de 2 MB não subiam — o app aceita até 6 MB, o PHP descartava).
+  Backup: `/etc/php/8.4/apache2/php.ini.bak-20261011`. Após alterar, `systemctl reload apache2`.
+  Local (XAMPP) usa 512M e não reproduz o problema.
 
 ## Banco de dados
 
