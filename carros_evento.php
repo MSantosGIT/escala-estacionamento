@@ -226,21 +226,20 @@ function toggleForm(){
   <?php else: ?>
   <table class="tbl-carros">
     <thead><tr>
-      <th>Data</th><th>Evento</th>
+      <th class="right">Total</th><th>Data</th><th>Evento</th>
       <th class="right">Principal</th><th class="right">Anexo</th><th class="right">Gramado</th><th class="right">Externo</th>
-      <th class="right">Total</th>
       <?php if ($ehAdm): ?><th></th><?php endif; ?>
     </tr></thead>
     <tbody>
       <?php foreach ($registros as $r): ?>
       <tr>
-        <td><?= date('d/m/Y', strtotime($r['data_evento'])) ?></td>
+        <td class="right car-badge"><?= number_format((int)$r['total_veic'],0,',','.') ?></td>
+        <td><?= date('d/m/Y', strtotime($r['data_evento'])) ?><br><span class="muted" style="font-size:.72rem"><?= ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][(int)date('w', strtotime($r['data_evento']))] ?></span></td>
         <td><?= e($r['evento']) ?></td>
         <td class="right"><?= number_format((int)$r['qtd_estacionamento'],0,',','.') ?></td>
         <td class="right"><?= number_format((int)$r['qtd_anexo'],0,',','.') ?></td>
         <td class="right"><?= number_format((int)$r['qtd_gramado'],0,',','.') ?></td>
         <td class="right"><?= number_format((int)$r['qtd_externo'],0,',','.') ?></td>
-        <td class="right car-badge"><?= number_format((int)$r['total_veic'],0,',','.') ?></td>
         <?php if ($ehAdm): ?>
         <td class="right" style="white-space:nowrap">
           <a class="btn sm sec" href="carros_evento.php?editar=<?= (int)$r['escala_id'] ?>#form-registro" title="Editar">✏️</a>
