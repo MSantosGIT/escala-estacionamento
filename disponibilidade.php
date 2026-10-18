@@ -13,11 +13,6 @@ $prox = (clone $hoje)->modify('first day of next month');
 $mesAlvo = (int)$prox->format('n');
 $anoAlvo = (int)$prox->format('Y');
 
-// garante que os domingos do mês seguinte existam para marcação
-if ($meuColabId && $prazo) {
-    criarDomingosDoMes($pdo, $mesAlvo, $anoAlvo);
-}
-
 // salvar marcações
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $meuColabId && $prazo) {
     validarCSRF();

@@ -14,7 +14,7 @@ $dtProx = (clone $dtAtual)->modify('+1 month');
 
 // colaboradores ativos
 $colabs = $pdo->query(
-  "SELECT id, nome, nivel FROM colaboradores WHERE ativo=1
+  "SELECT id, nome, nivel, trabalha_semana, trabalha_sabado, trabalha_domingo FROM colaboradores WHERE ativo=1
    ORDER BY FIELD(nivel,'lider','pleno','junior'), nome"
 )->fetchAll();
 
@@ -50,10 +50,12 @@ $ticketsEventos = [];
 foreach ($eventos as $ev) {
     $eid = (int)$ev['id'];
     $indisponiveisDoEvento = $indisp[$eid] ?? [];
+    $diaSem = (int)date('w', strtotime($ev['data_evento']));
+    $campoDia = $diaSem === 0 ? 'trabalha_domingo' : ($diaSem === 6 ? 'trabalha_sabado' : 'trabalha_semana');
     $disponiveis = [];
     $porNivel = ['lider'=>0,'pleno'=>0,'junior'=>0];
     foreach ($colabs as $c) {
-        if (!isset($indisponiveisDoEvento[(int)$c['id']])) {
+        if (!empty($c[$campoDia]) && !isset($indisponiveisDoEvento[(int)$c['id']])) {
             $disponiveis[] = $c;
             if (isset($porNivel[$c['nivel']])) $porNivel[$c['nivel']]++;
         }
@@ -65,7 +67,7 @@ $titulo = 'Disponíveis para escalar';
 require __DIR__ . '/includes/header.php';
 ?>
 <h1 class="page-title">Disponíveis para escalar</h1>
-<p class="page-sub">Colaboradores livres para cada evento — quem não marcou indisponibilidade.</p>
+<p class="page-sub">Colaboradores livres para cada evento — respeita os dias de trabalho do cadastro e quem não marcou indisponibilidade.</p>
 
 <div class="disp-resumo">
   <div class="disp-resumo-item"><span class="badge lider">A1</span> <?= $totalPorNivel['lider'] ?> ativo(s)</div>

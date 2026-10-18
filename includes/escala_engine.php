@@ -332,28 +332,6 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
 }
 
 /**
- * Garante que os domingos (Culto de Celebração 17:45) de um mês/ano existam.
- * Retorna o nº de eventos criados.
- */
-function criarDomingosDoMes(PDO $pdo, int $mes, int $ano): int {
-    $inicio = new DateTime("$ano-$mes-01");
-    $fim    = (clone $inicio)->modify('last day of this month');
-    $criadas = 0;
-    $st = $pdo->prepare(
-        "INSERT IGNORE INTO escalas
-         (data_evento, dia, mes, ano, evento, horario_chegada, num_colaboradores, exige_lider, status)
-         VALUES (?, ?, ?, ?, 'Culto de Celebração', '17:45:00', 3, 1, 'aberta')"
-    );
-    for ($d = clone $inicio; $d <= $fim; $d->modify('+1 day')) {
-        if ((int)$d->format('w') === 0) {
-            $st->execute([$d->format('Y-m-d'), (int)$d->format('d'), $mes, $ano]);
-            $criadas += $st->rowCount();
-        }
-    }
-    return $criadas;
-}
-
-/**
  * Verifica se a escala de um mês/ano já foi gerada automaticamente.
  */
 function escalaMensalJaGerada(PDO $pdo, int $mes, int $ano): bool {
@@ -370,8 +348,6 @@ function escalaMensalJaGerada(PDO $pdo, int $mes, int $ano): bool {
  * inclusive os que já estavam preenchidos. false processa só os abertos (1ª geração).
  */
 function gerarEscalaDoMes(PDO $pdo, int $mes, int $ano, bool $incluirPreenchidas = false): array {
-    criarDomingosDoMes($pdo, $mes, $ano);
-
     $filtroStatus = $incluirPreenchidas ? '' : " AND status='aberta'";
     $st = $pdo->prepare(
         "SELECT * FROM escalas

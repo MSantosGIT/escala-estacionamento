@@ -44,6 +44,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ehAdmin()) {
         }
     }
 
+    if ($op === 'zerar_mes') {
+        if (!ehAdmin()) {
+            flash('Apenas administrador.', 'erro');
+        } else {
+            $zMes = $telaMes;
+            $zAno = $telaAno;
+            $pdo->prepare("DELETE ec FROM escala_colaboradores ec JOIN escalas e ON e.id=ec.escala_id WHERE e.mes=? AND e.ano=?")
+                ->execute([$zMes, $zAno]);
+            $pdo->prepare("UPDATE escalas SET status='aberta' WHERE mes=? AND ano=?")->execute([$zMes, $zAno]);
+            flash("Escala de $zMes/$zAno foi zerada (removidos os escalados).");
+            redirect("escalas.php?mes=$zMes&ano=$zAno");
+        }
+    }
+
     if ($op === 'excluir') {
         $pdo->prepare("DELETE FROM escalas WHERE id=?")->execute([(int)$_POST['escala_id']]);
         flash('Escala excluída.');
@@ -112,10 +126,11 @@ $escalas = $st->fetchAll();
 
 // carrega escalados
 $escalados = [];
+$contagemMes = [];   // colaborador_id => ['nome'=>, 'qtd'=>]
 if ($escalas) {
     $ids = implode(',', array_column($escalas,'id'));
     $q = $pdo->query(
-      "SELECT ec.escala_id, c.nome, ec.nivel_na_escala
+      "SELECT ec.escala_id, ec.colaborador_id, c.nome, ec.nivel_na_escala
        FROM escala_colaboradores ec JOIN colaboradores c ON c.id=ec.colaborador_id
        WHERE ec.escala_id IN ($ids)
        ORDER BY
@@ -126,8 +141,18 @@ if ($escalas) {
          FIELD(ec.nivel_na_escala,'lider','pleno','junior'),
          c.nome"
     );
-    foreach ($q as $r) $escalados[$r['escala_id']][] = $r;
+    foreach ($q as $r) {
+        $escalados[$r['escala_id']][] = $r;
+        $cid = (int)$r['colaborador_id'];
+        if (!isset($contagemMes[$cid])) $contagemMes[$cid] = ['nome' => $r['nome'], 'qtd' => 0];
+        $contagemMes[$cid]['qtd']++;
+    }
 }
+
+// resumo do mês: pessoas escaladas x repetidas
+$pessoasEscaladas = count($contagemMes);
+$repetidos = array_values(array_filter($contagemMes, fn($r) => $r['qtd'] > 1));
+usort($repetidos, fn($a, $b) => ($b['qtd'] <=> $a['qtd']) ?: strcasecmp($a['nome'], $b['nome']));
 
 $meses = [1=>'Janeiro',2=>'Fevereiro',3=>'Março',4=>'Abril',5=>'Maio',6=>'Junho',
           7=>'Julho',8=>'Agosto',9=>'Setembro',10=>'Outubro',11=>'Novembro',12=>'Dezembro'];
@@ -165,13 +190,22 @@ require __DIR__ . '/includes/header.php';
 
 <div id="card-ferramentas" class="card card-recolhivel">
   <h2>Ferramentas automáticas</h2>
-  <form method="post" onsubmit="return confirm('Gerar a escala do mês seguinte agora, respeitando as indisponibilidades já marcadas?')">
-    <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
-    <input type="hidden" name="op" value="gerar_mes">
-    <label>Gerar a escala do mês seguinte (antecipar antes do dia 22)</label>
-    <button class="btn">📅 Gerar mês seguinte</button>
-    <p class="muted" style="margin-top:.4rem">Respeita as indisponibilidades marcadas até agora. Após gerar, o mês não é gerado novamente de forma automática.</p>
-  </form>
+   <form method="post" onsubmit="return confirm('Gerar a escala do mês seguinte agora, respeitando as indisponibilidades já marcadas?')">
+     <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
+     <input type="hidden" name="op" value="gerar_mes">
+     <label>Gerar a escala do mês seguinte (antecipar antes do dia 22)</label>
+     <button class="btn">📅 Gerar mês seguinte</button>
+     <p class="muted" style="margin-top:.4rem">Respeita as indisponibilidades marcadas até agora. Após gerar, o mês não é gerado novamente de forma automática.</p>
+   </form>
+
+   <form method="post" style="margin-top:.8rem" onsubmit="return confirm('Zerar escala do mês? Isso remove TODOS os colaboradores escalados de <?= $meses[$mes] ?> / <?= $ano ?> e define todos os eventos como ABERTOS.')">
+     <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
+     <input type="hidden" name="op" value="zerar_mes">
+     <input type="hidden" name="mes" value="<?= $mes ?>">
+     <input type="hidden" name="ano" value="<?= $ano ?>">
+     <button class="btn danger">🗑️ Zerar escala de <?= $meses[$mes] ?>/<?= $ano ?></button>
+     <p class="muted" style="margin-top:.4rem">Apenas remove os escalados (não exclui eventos).</p>
+   </form>
 </div>
 
 <style>
@@ -192,6 +226,20 @@ require __DIR__ . '/includes/header.php';
     </form>
     </div>
   </div>
+
+  <div class="resumo-mes" style="display:flex;flex-wrap:wrap;gap:.6rem;margin:.6rem 0 1rem">
+    <span class="badge ok">Total escalados: <?= $pessoasEscaladas ?> colaborador(es) distinto(s)</span>
+    <?php if ($repetidos): ?>
+      <span class="badge warn">Repetidos neste mês: <?= count($repetidos) ?> pessoa(s)</span>
+    <?php else: ?>
+      <span class="badge sec">Sem repetições neste mês</span>
+    <?php endif; ?>
+  </div>
+  <?php if ($repetidos): ?>
+  <div class="muted" style="margin-bottom:1rem;font-size:.85rem">
+    Destacados: <?php foreach ($repetidos as $i => $r): ?><strong><?= e($r['nome']) ?> (<?= $r['qtd'] ?>x)</strong><?= $i<count($repetidos)-1?', ':''; endforeach; ?>
+  </div>
+  <?php endif; ?>
 
   <table>
     <thead><tr><th>Data</th><th>Evento</th><th>Chegada</th><th>Equipe escalada</th><th>Status</th><?php if(ehAdmin()):?><th></th><?php endif;?></tr></thead>

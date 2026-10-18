@@ -217,7 +217,7 @@ require __DIR__ . '/includes/header.php';
   ?>
   <div class="card evento" data-eid="<?= $eid ?>">
     <div class="flex-between">
-      <h2><?= e($ev['evento']) ?> · <?= date('d/m/Y', $time) ?> <span class="muted" style="font-weight:400">(<?= ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][date('w',$time)] ?> · <?= substr($ev['horario_chegada'],0,5) ?>)</span></h2>
+      <h2><?= e($ev['evento']) ?> · <?= date('d/m/Y', $time) ?><span class="muted" style="display:block;font-weight:400;font-size:.8rem;margin-top:.15rem"><?= ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][date('w',$time)] ?> · <?= substr($ev['horario_chegada'],0,5) ?></span></h2>
     </div>
 
     <table class="tab-equipe">
