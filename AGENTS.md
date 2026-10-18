@@ -53,7 +53,6 @@ alertas e relatório anual.
 ## Cron de produção (já instalado no crontab do root)
 
 ```
-0 6 * * 1  php /var/www/instituto/public_html/escala/cron/gerar_escalas.php   # segunda 06:00
 0 8 * * *  php /var/www/instituto/public_html/escala/cron_confirmacoes.php      # diário 08:00
 ```
 Log: `/var/log/escala_cron.log`.

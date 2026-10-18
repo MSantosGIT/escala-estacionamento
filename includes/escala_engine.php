@@ -332,34 +332,6 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
 }
 
 /**
- * Cria as escalas de todos os domingos do ano (Culto de Celebração 17:45).
- */
-function criarDomingosDoAno(PDO $pdo, int $ano): int {
-    $inicio = new DateTime("$ano-01-01");
-    $fim    = new DateTime("$ano-12-31");
-    $criadas = 0;
-
-    $st = $pdo->prepare(
-        "INSERT IGNORE INTO escalas
-         (data_evento, dia, mes, ano, evento, horario_chegada, num_colaboradores, exige_lider, status)
-         VALUES (?, ?, ?, ?, 'Culto de Celebração', '17:45:00', 3, 1, 'aberta')"
-    );
-
-    for ($d = clone $inicio; $d <= $fim; $d->modify('+1 day')) {
-        if ((int)$d->format('w') === 0) { // domingo
-            $st->execute([
-                $d->format('Y-m-d'),
-                (int)$d->format('d'),
-                (int)$d->format('m'),
-                (int)$d->format('Y'),
-            ]);
-            $criadas += $st->rowCount();
-        }
-    }
-    return $criadas;
-}
-
-/**
  * Garante que os domingos (Culto de Celebração 17:45) de um mês/ano existam.
  * Retorna o nº de eventos criados.
  */
@@ -454,13 +426,13 @@ function gerarEscalaDoMes(PDO $pdo, int $mes, int $ano, bool $incluirPreenchidas
 }
 
 /**
- * Dispara a geração do mês seguinte no 1º acesso do admin a partir do dia 20.
+ * Dispara a geração do mês seguinte no 1º acesso do admin a partir do dia 22.
  * Idempotente: só roda uma vez por mês (controle em geracao_mensal).
  * Retorna o resumo se gerou agora, ou null se não era o caso.
  */
 function dispararGeracaoAutomatica(PDO $pdo): ?array {
     $hoje = new DateTime('today');
-    if ((int)$hoje->format('j') < 20) return null; // só a partir do dia 20
+    if ((int)$hoje->format('j') < 22) return null; // só a partir do dia 22
 
     // mês seguinte
     $prox = (clone $hoje)->modify('first day of next month');
@@ -473,7 +445,7 @@ function dispararGeracaoAutomatica(PDO $pdo): ?array {
 }
 
 /**
- * Geração manual do mês seguinte (botão do admin), sem a trava do dia 20.
+ * Geração manual do mês seguinte (botão do admin), sem a trava do dia 22.
  * Idempotente: se o mês já foi gerado, não gera de novo.
  * Retorna o resumo, ou null se já estava gerado.
  */

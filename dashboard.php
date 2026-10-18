@@ -21,13 +21,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['op'] ?? '') === 'dispensar
     redirect('dashboard.php');
 }
 
-// gatilho: no 1º acesso do ADMIN a partir do dia 20, gera a escala do mês seguinte
+// gatilho: no 1º acesso do ADMIN a partir do dia 22, gera a escala do mês seguinte
 $geracaoAgora = null;
 if (ehAdmin()) {
     $geracaoAgora = dispararGeracaoAutomatica($pdo);
 }
 
-// alerta "agenda do mês seguinte montada" para todos (enquanto for o mês corrente >= dia 20
+// alerta "agenda do mês seguinte montada" para todos (enquanto for o mês corrente >= dia 22
 // ou já no mês alvo): considera montada se o mês seguinte consta em geracao_mensal
 $prox = (new DateTime('today'))->modify('first day of next month');
 $mesProx = (int)$prox->format('n'); $anoProx = (int)$prox->format('Y');
@@ -88,10 +88,10 @@ require __DIR__ . '/includes/header.php';
 </div>
 <?php endif; ?>
 
-<?php /* Lembrete para colaborador marcar disponibilidade (antes do dia 20) */ ?>
-<?php if ($meuColabId && (int)date('j') <= 20 && !$agendaMontada): ?>
+<?php /* Lembrete para colaborador marcar disponibilidade (antes do dia 21) */ ?>
+<?php if ($meuColabId && (int)date('j') <= 21 && !$agendaMontada): ?>
 <div class="flash erro" style="display:flex;justify-content:space-between;align-items:center;gap:1rem">
-  <span>📝 Marque sua indisponibilidade de <?= e($nomeMesProx) ?> até o dia 20.</span>
+  <span>📝 Marque sua indisponibilidade de <?= e($nomeMesProx) ?> até o dia 21.</span>
   <a href="disponibilidade.php" class="btn sm">Marcar agora</a>
 </div>
 <?php endif; ?>

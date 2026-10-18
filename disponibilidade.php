@@ -5,9 +5,9 @@ $pdo = db();
 $u = usuario();
 $meuColabId = (int)($u['colaborador_id'] ?? 0);
 
-// período de marcação: eventos do mês seguinte, liberados até o dia 20 do mês atual
+// período de marcação: eventos do mês seguinte, liberados até o dia 21 do mês atual
 $hoje = new DateTime('today');
-$prazo = (int)$hoje->format('j') <= 20;  // pode marcar até o dia 20 (inclusive)
+$prazo = (int)$hoje->format('j') <= 21;  // pode marcar até o dia 21 (inclusive)
 
 $prox = (clone $hoje)->modify('first day of next month');
 $mesAlvo = (int)$prox->format('n');
@@ -82,9 +82,9 @@ require __DIR__ . '/includes/header.php';
 <?php else: ?>
 
   <?php if (!$prazo): ?>
-    <div class="flash erro">O prazo para marcar indisponibilidade do próximo mês encerrou no dia 20. A escala já está sendo montada. Procure o administrador se precisar de ajuste.</div>
+    <div class="flash erro">O prazo para marcar indisponibilidade do próximo mês encerrou no dia 21. A escala já está sendo montada. Procure o administrador se precisar de ajuste.</div>
   <?php else: ?>
-    <div class="flash sucesso">Prazo aberto até o dia 20. Marque abaixo os eventos em que estará indisponível e salve.</div>
+    <div class="flash sucesso">Prazo aberto até o dia 21. Marque abaixo os eventos em que estará indisponível e salve.</div>
   <?php endif; ?>
 
   <div class="card">
@@ -118,7 +118,7 @@ require __DIR__ . '/includes/header.php';
   </div>
 
   <div class="card">
-    <p class="muted">Eventos não marcados significam que você está disponível. A escala é montada automaticamente após o dia 20, respeitando as marcações de todos e as regras de composição (A1, A2 e A3).</p>
+    <p class="muted">Eventos não marcados significam que você está disponível. A escala é montada automaticamente a partir do dia 22, respeitando as marcações de todos e as regras de composição (A1, A2 e A3).</p>
   </div>
 <?php endif; ?>
 

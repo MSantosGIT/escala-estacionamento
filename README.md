@@ -18,11 +18,9 @@ Níveis da equipe exibidos como **A1 (líder), A2 (pleno), A3 (júnior)**.
 - **Cadastro de colaboradores**: nome, celular, nível (A1/A2/A3), disponibilidade em
   **Dias de Semana, Sábado e Domingo** (separadamente) e criação opcional de login/senha.
 - **Escalas**: dia/mês/ano, evento, horário de chegada, nº de colaboradores e exigência de líder.
-- **Geração de domingos do ano**: cria automaticamente o *Culto de Celebração* às **17:45**
-  em todos os domingos do ano escolhido.
 - **Geração automática de escala** seguindo as regras de negócio (ver abaixo).
-- **Geração do mês seguinte**: até o dia 20 o colaborador marca os eventos em que **não**
-  poderá servir (`disponibilidade.php`). No 1º acesso de um administrador a partir do dia 20,
+- **Geração do mês seguinte**: até o dia 21 o colaborador marca os eventos em que **não**
+  poderá servir (`disponibilidade.php`). No 1º acesso de um administrador a partir do dia 22,
   o sistema gera a escala do mês seguinte **automaticamente** (uma única vez). O admin também
   pode gerar manualmente a qualquer momento (botão na tela de Escalas). Eventos sem gente
   suficiente entram como parciais para ajuste manual. Um aviso na tela inicial informa que a
@@ -33,7 +31,7 @@ Níveis da equipe exibidos como **A1 (líder), A2 (pleno), A3 (júnior)**.
   são notificados a cada ajuste.
 - **Indisponibilidade pelo Admin** (`admin_indisponibilidade.php`): seleciona um colaborador,
   navega pelo calendário do mês e clica nos eventos para marcar indisponibilidade (sem a trava
-  do dia 20), podendo regerar o mês depois.
+   do dia 22), podendo regerar o mês depois.
 - **Ordenação manual** dos escalados em cada evento (`migration_ordenacao.sql`).
 - **Calendário imprimível** (`calendario.php`): visão mensal em grade com eventos, horário,
   vagas e equipe escalada por cor de nível (A4 paisagem).
@@ -102,7 +100,7 @@ Níveis da equipe exibidos como **A1 (líder), A2 (pleno), A3 (júnior)**.
 2. **Preferência de 1 evento por colaborador no mês** (quem tem menos eventos no mês entra primeiro).
 3. **Prioriza quem está há mais tempo sem ser escalado**.
 4. Respeita a **disponibilidade** por tipo de dia: semana, sábado e domingo, e as
-   **indisponibilidades por evento** marcadas até o dia 20.
+    **indisponibilidades por evento** marcadas até o dia 21.
 5. **Grava o histórico** de cada escalação por colaborador.
 
 ## Instalar como app (celular e tablet)
@@ -139,19 +137,16 @@ instalação e cache leve dos assets (páginas PHP sempre buscam a versão mais 
 ## Cron (opcional)
 
 ```
-# preenche escalas abertas futuras
-0 6 * * 1  php /caminho/escala_estacionamento/cron/gerar_escalas.php
-
 # lembretes de confirmação (7 dias antes) e alerta de não confirmados (48h antes)
 0 7 * * *  php /caminho/escala_estacionamento/cron_confirmacoes.php
 ```
 
 ## Uso rápido
 
-1. Em **Escalas → Ferramentas automáticas**, clique em **Criar domingos** para o ano.
-2. Cadastre/ajuste **Colaboradores**.
-3. Clique em **Gerar escala automática** (ou **📅 Gerar mês seguinte**).
-4. Revise em **Ajustar escala**, acompanhe cientes/check-ins e conte carros por evento.
+1. Cadastre/ajuste **Colaboradores**.
+2. Em **Escalas → Ferramentas automáticas**, clique em **📅 Gerar mês seguinte** para antecipar
+   a geração (a partir do dia 22 ela ocorre automaticamente no 1º acesso do admin).
+3. Revise em **Ajustar escala**, acompanhe cientes/check-ins e conte carros por evento.
 
 ## Estrutura
 
@@ -170,7 +165,6 @@ confirmar_escala / checkin / eventos_finalizados / checklist_itens / carros_even
 trocas / historico_trocas
 busca / buscar_veiculo / cadastro_publico
 enviar_alerta / historico / relatorio_anual
-cron/gerar_escalas.php      execução agendada (reforço)
 cron_confirmacoes.php       execução agendada (lembretes)
 seed.php                    dados iniciais (apagar após uso)
 database.sql                schema base

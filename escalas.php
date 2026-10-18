@@ -25,29 +25,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ehAdmin()) {
         flash('Evento criado.');
     }
 
-    if ($op === 'domingos') {
-        $ano = (int)$_POST['ano'];
-        $n = criarDomingosDoAno($pdo, $ano);
-        flash("$n domingos (Culto de Celebração 17:45) criados para $ano.");
-    }
-
     if ($op === 'gerar') {
         $id = (int)$_POST['escala_id'];
         $st = $pdo->prepare("SELECT * FROM escalas WHERE id=?"); $st->execute([$id]);
         $res = gerarEscalaEvento($pdo, $st->fetch());
         flash($res['msg'], $res['ok']?'sucesso':'erro');
-    }
-
-    if ($op === 'gerar_lote') {
-        $st = $pdo->query("SELECT * FROM escalas WHERE status='aberta' AND data_evento>=CURDATE() ORDER BY data_evento");
-        $ok=0;$falhas=[];
-        foreach ($st as $esc) {
-            $r = gerarEscalaEvento($pdo, $esc);
-            $r['ok'] ? $ok++ : $falhas[]=$r['msg'];
-        }
-        $msg = "$ok escala(s) gerada(s).";
-        if ($falhas) $msg .= ' Pendências: '.implode(' | ', array_slice($falhas,0,3)).(count($falhas)>3?'…':'');
-        flash($msg, $falhas?'erro':'sucesso');
     }
 
     if ($op === 'gerar_mes') {
@@ -183,27 +165,10 @@ require __DIR__ . '/includes/header.php';
 
 <div id="card-ferramentas" class="card card-recolhivel">
   <h2>Ferramentas automáticas</h2>
-  <form method="post" style="margin-bottom:1.2rem">
-    <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
-    <input type="hidden" name="op" value="domingos">
-    <label>Gerar domingos do ano (Culto de Celebração · 17:45)</label>
-    <div style="display:flex;gap:.6rem">
-      <input type="number" name="ano" value="<?= date('Y') ?>" style="max-width:130px">
-      <button class="btn sec">Criar domingos</button>
-    </div>
-  </form>
-  <hr style="border:none;border-top:1px solid var(--borda);margin:1rem 0">
-  <form method="post" onsubmit="return confirm('Gerar automaticamente todas as escalas abertas futuras?')">
-    <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
-    <input type="hidden" name="op" value="gerar_lote">
-    <label>Preencher automaticamente todas as escalas abertas</label>
-    <button class="btn">⚙️ Gerar escala automática</button>
-  </form>
-  <hr style="border:none;border-top:1px solid var(--borda);margin:1rem 0">
   <form method="post" onsubmit="return confirm('Gerar a escala do mês seguinte agora, respeitando as indisponibilidades já marcadas?')">
     <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
     <input type="hidden" name="op" value="gerar_mes">
-    <label>Gerar a escala do mês seguinte (antecipar antes do dia 20)</label>
+    <label>Gerar a escala do mês seguinte (antecipar antes do dia 22)</label>
     <button class="btn">📅 Gerar mês seguinte</button>
     <p class="muted" style="margin-top:.4rem">Respeita as indisponibilidades marcadas até agora. Após gerar, o mês não é gerado novamente de forma automática.</p>
   </form>
