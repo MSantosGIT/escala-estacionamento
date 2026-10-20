@@ -14,17 +14,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nivel   = $_POST['nivel'];
     $semana  = isset($_POST['trabalha_semana']) ? 1 : 0;
     $sabado  = isset($_POST['trabalha_sabado']) ? 1 : 0;
-    $domingo = isset($_POST['trabalha_domingo']) ? 1 : 0;
+    $domMan  = isset($_POST['trabalha_domingo_manha']) ? 1 : 0;
+    $domNoite= isset($_POST['trabalha_domingo_noite']) ? 1 : 0;
     $crLogin = trim($_POST['login'] ?? '');
     $crSenha = $_POST['senha'] ?? '';
 
     if ($id) {
-        $pdo->prepare("UPDATE colaboradores SET nome=?,celular=?,nivel=?,trabalha_semana=?,trabalha_sabado=?,trabalha_domingo=? WHERE id=?")
-            ->execute([$nome,$cel,$nivel,$semana,$sabado,$domingo,$id]);
+        $pdo->prepare("UPDATE colaboradores SET nome=?,celular=?,nivel=?,trabalha_semana=?,trabalha_sabado=?,trabalha_domingo_manha=?,trabalha_domingo_noite=? WHERE id=?")
+            ->execute([$nome,$cel,$nivel,$semana,$sabado,$domMan,$domNoite,$id]);
         flash('Colaborador atualizado.');
     } else {
-        $pdo->prepare("INSERT INTO colaboradores (nome,celular,nivel,trabalha_semana,trabalha_sabado,trabalha_domingo) VALUES (?,?,?,?,?,?)")
-            ->execute([$nome,$cel,$nivel,$semana,$sabado,$domingo]);
+        $pdo->prepare("INSERT INTO colaboradores (nome,celular,nivel,trabalha_semana,trabalha_sabado,trabalha_domingo_manha,trabalha_domingo_noite) VALUES (?,?,?,?,?,?,?)")
+            ->execute([$nome,$cel,$nivel,$semana,$sabado,$domMan,$domNoite]);
         $cid = $pdo->lastInsertId();
         // cria login de acesso (tipo colaborador) se informado
         if ($crLogin && $crSenha) {
@@ -102,7 +103,8 @@ require __DIR__ . '/includes/header.php';
     <div class="form-row">
       <div class="check"><input type="checkbox" name="trabalha_semana" id="ts" <?= (!$editar||$editar['trabalha_semana'])?'checked':'' ?>><label for="ts" style="margin:0">Dias de Semana</label></div>
       <div class="check"><input type="checkbox" name="trabalha_sabado" id="tsa" <?= (!$editar||$editar['trabalha_sabado'])?'checked':'' ?>><label for="tsa" style="margin:0">Sábado</label></div>
-      <div class="check"><input type="checkbox" name="trabalha_domingo" id="td" <?= (!$editar||$editar['trabalha_domingo'])?'checked':'' ?>><label for="td" style="margin:0">Domingo</label></div>
+      <div class="check"><input type="checkbox" name="trabalha_domingo_manha" id="tdm" <?= ($editar&&$editar['trabalha_domingo_manha'])?'checked':'' ?>><label for="tdm" style="margin:0">Domingo de manhã</label></div>
+      <div class="check"><input type="checkbox" name="trabalha_domingo_noite" id="tdn" <?= ($editar&&$editar['trabalha_domingo_noite'])?'checked':'' ?>><label for="tdn" style="margin:0">Domingo à noite</label></div>
     </div>
     <?php if (!$editar): ?>
     <div class="form-row">
@@ -135,7 +137,7 @@ require __DIR__ . '/includes/header.php';
     <p class="muted" style="margin-top:-.5rem;margin-bottom:.8rem">Resultados para "<?= e($busca) ?>" — <?= count($lista) ?> encontrado(s).</p>
   <?php endif; ?>
   <table>
-    <thead><tr><th>Nome</th><th>Celular</th><th>Nível</th><th>Semana</th><th>Sáb</th><th>Dom</th><th></th></tr></thead>
+    <thead><tr><th>Nome</th><th>Celular</th><th>Nível</th>        <th>Semana</th><th>Sáb</th><th>Dom Manhã</th><th>Dom Noite</th><th></th></tr></thead>
     <tbody>
     <?php foreach ($lista as $c): ?>
       <tr>
@@ -144,7 +146,8 @@ require __DIR__ . '/includes/header.php';
         <td><span class="badge <?= $c['nivel'] ?>"><?= nivelLabel($c['nivel']) ?></span></td>
         <td><?= $c['trabalha_semana']?'✓':'—' ?></td>
         <td><?= $c['trabalha_sabado']?'✓':'—' ?></td>
-        <td><?= $c['trabalha_domingo']?'✓':'—' ?></td>
+        <td><?= !empty($c['trabalha_domingo_manha'])?'✓':'—' ?></td>
+        <td><?= !empty($c['trabalha_domingo_noite'])?'✓':'—' ?></td>
         <td class="right">
           <a class="btn sm sec" href="?acao=editar&id=<?= $c['id'] ?>">Editar</a>
           <a class="btn sm danger" href="?acao=excluir&id=<?= $c['id'] ?>" onclick="return confirm('Desativar este colaborador?')">Remover</a>

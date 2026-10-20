@@ -58,10 +58,12 @@ function ajudaConteudo(): array {
 
         'escalas.php' => [
             'titulo' => '📋 Escalas',
-            'intro'  => 'Veja a escala mensal completa: quem está escalado em cada evento.',
+            'intro'  => 'Veja a escala mensal completa: quem está escalado em cada evento. Também mostra um resumo com repetições no mês.',
             'passos' => [
                 'Use as setas ou o seletor de mês/ano para navegar entre os períodos.',
+                'Acima da tabela aparece: "Total escalados" (distintos no mês), "Repetidos neste mês" e os nomes destacados com quantas vezes foram escalados.',
                 'Cada evento mostra a equipe escalada completa.',
+                'Administradores têm "Ferramentas automáticas": gerar/regerar mês seguinte e "Zerar escala de Mês/Ano" (remove os escalados, não exclui eventos).',
                 'Localize os dias em que você está escalado para se programar com antecedência.',
             ],
         ],
@@ -201,9 +203,13 @@ function ajudaConteudo(): array {
 
         'admin_escala.php' => [
             'titulo' => '🛠️ Ajustar escala (Admin)',
-            'intro'  => 'Gere e ajuste manualmente a escala do mês.',
+            'intro'  => 'Gere e ajuste manualmente a escala do mês. A geração segue regras de distribuição por níveis e prioridade.',
             'passos' => [
                 'Escolha o mês/ano e toque em "Gerar escala" para a distribuição automática.',
+                'Critérios da geração automática (resumido): prefere quem tem MENOS escalas no ANO, depois no MÊS, depois no SEMESTRE, depois MAIS tempo sem escalar (última escala mais antiga), depois ordem padrão do colaborador e nome.',
+                'Domingo: divide entre "Domingo de manhã" (chegada < 12h) e "Domingo à noite" (chegada >= 12h), usando a disponibilidade de cada turno.',
+                'Para eventos com 3 ou + colaboradores exige A1 (líder) + A2 (pleno) + A3 (júnior). Com 1–2 não obriga líder, a menos que "exige líder" esteja marcado no evento.',
+                'Regra de exceção: se ainda houver eventos abertos no mês e não houver ninguém com 0 escalas no mês para o nível/turno, pode escalar alguém com exatamente 1 no mês (nunca >=2), priorizando menos no ano + mais tempo sem escalar.',
                 'Arraste para reordenar quem aparece primeiro (define o colaborador principal do evento).',
                 'Ajustes manuais substituem a geração automática apenas para os eventos alterados.',
             ],
@@ -221,7 +227,7 @@ function ajudaConteudo(): array {
 
         'disponiveis.php' => [
             'titulo' => '🟢 Disponíveis para escalar',
-            'intro'  => 'Veja, evento por evento, quais colaboradores estão livres para serem escalados (quem não marcou indisponibilidade).',
+            'intro'  => 'Veja, evento por evento, quais colaboradores estão livres para serem escalados (quem não marcou indisponibilidade). Considera a disponibilidade por turno (semana/sábado/domingo manhã/domingo noite).',
             'passos' => [
                 'Use as setas para navegar entre os meses.',
                 'Cada evento aparece como um ticket, com a quantidade total de disponíveis e a contagem por nível (A1, A2, A3).',

@@ -209,7 +209,14 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
     $num      = (int)$escala['num_colaboradores'];
     $exigeL   = (int)$escala['exige_lider'] === 1;
     $diaSem   = (int)date('w', strtotime($escala['data_evento'])); // 0=Dom ... 6=Sáb
-    $tipoDia  = $diaSem === 0 ? 'domingo' : ($diaSem === 6 ? 'sabado' : 'semana');
+    if ($diaSem === 0) {
+        $hora = (int)substr($escala['horario_chegada'] ?? '17:00', 0, 2);
+        $tipoDia  = $hora < 12 ? 'domingo_manha' : 'domingo_noite';
+    } elseif ($diaSem === 6) {
+        $tipoDia  = 'sabado';
+    } else {
+        $tipoDia  = 'semana';
+    }
 
     $ultima = ultimaEscalaPorColaborador($pdo);
     // conta eventos do mês SEM contar o próprio evento sendo gerado agora
@@ -235,6 +242,12 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
     $stInd->execute([$escalaId]);
     $indispon = array_map('intval', array_column($stInd->fetchAll(), 'colaborador_id'));
 
+    // ainda há eventos abertos no mês? Se sim, podemos permitir 2ª escala em caso excepcional
+    $stAbertos = $pdo->prepare("SELECT COUNT(*) FROM escalas WHERE mes=? AND ano=? AND status='aberta' AND id!=?");
+    $stAbertos->execute([(int)$escala['mes'], (int)$escala['ano'], $escalaId]);
+    $eventosAbertosRestantes = (int)$stAbertos->fetchColumn();
+    $allowSegunda = ($eventosAbertosRestantes > 0);
+
     $selecionados = [];   // colaborador_id => nivel
     $jaUsados     = $jaNoMes;   // começa já excluindo quem foi escalado em outro evento do mês
     $faltas       = [];
@@ -244,6 +257,14 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
     // ---- 1) Garantir composição mínima para eventos de 3+ ----
     if ($precisaComposicao || $exigeL) {
         $lid = ordenarPorPrioridade(candidatos($pdo, 'lider', $tipoDia, $jaUsados, $indispon), $ultima, $noMes, $noSem, $noAno, $opMap, $nmMap);
+        if (empty($lid) && $allowSegunda) {
+            $jaUsadosRelax = array_keys(array_filter($noMes, fn($qtd) => $qtd >= 2));
+            $cand = candidatos($pdo, 'lider', $tipoDia, $jaUsadosRelax, $indispon);
+            $cand1 = array_filter($cand, fn($cid) => (($noMes[$cid] ?? 0) === 1));
+            if ($cand1) {
+                $lid = ordenarPorPrioridade(array_values($cand1), $ultima, $noMes, $noSem, $noAno, $opMap, $nmMap);
+            }
+        }
         if (empty($lid)) {
             if (!$parcial) return ['ok' => false, 'msg' => 'Sem A1 disponível para ' . $escala['evento'] . ' em ' . $escala['data_evento']];
             $faltas[] = 'A1';
@@ -255,6 +276,14 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
 
     if ($precisaComposicao) {
         $ple = ordenarPorPrioridade(candidatos($pdo, 'pleno', $tipoDia, $jaUsados, $indispon), $ultima, $noMes, $noSem, $noAno, $opMap, $nmMap);
+        if (empty($ple) && $allowSegunda) {
+            $jaUsadosRelax = array_keys(array_filter($noMes, fn($qtd) => $qtd >= 2));
+            $cand = candidatos($pdo, 'pleno', $tipoDia, $jaUsadosRelax, $indispon);
+            $cand1 = array_filter($cand, fn($cid) => (($noMes[$cid] ?? 0) === 1));
+            if ($cand1) {
+                $ple = ordenarPorPrioridade(array_values($cand1), $ultima, $noMes, $noSem, $noAno, $opMap, $nmMap);
+            }
+        }
         if (empty($ple)) {
             if (!$parcial) return ['ok' => false, 'msg' => 'Sem A2 disponível para ' . $escala['evento'] . ' em ' . $escala['data_evento']];
             $faltas[] = 'A2';
@@ -264,6 +293,14 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
         }
 
         $jun = ordenarPorPrioridade(candidatos($pdo, 'junior', $tipoDia, $jaUsados, $indispon), $ultima, $noMes, $noSem, $noAno, $opMap, $nmMap);
+        if (empty($jun) && $allowSegunda) {
+            $jaUsadosRelax = array_keys(array_filter($noMes, fn($qtd) => $qtd >= 2));
+            $cand = candidatos($pdo, 'junior', $tipoDia, $jaUsadosRelax, $indispon);
+            $cand1 = array_filter($cand, fn($cid) => (($noMes[$cid] ?? 0) === 1));
+            if ($cand1) {
+                $jun = ordenarPorPrioridade(array_values($cand1), $ultima, $noMes, $noSem, $noAno, $opMap, $nmMap);
+            }
+        }
         if (empty($jun)) {
             if (!$parcial) return ['ok' => false, 'msg' => 'Sem A3 disponível para ' . $escala['evento'] . ' em ' . $escala['data_evento']];
             $faltas[] = 'A3';

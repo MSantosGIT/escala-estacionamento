@@ -14,7 +14,7 @@ $dtProx = (clone $dtAtual)->modify('+1 month');
 
 // colaboradores ativos
 $colabs = $pdo->query(
-  "SELECT id, nome, nivel, trabalha_semana, trabalha_sabado, trabalha_domingo FROM colaboradores WHERE ativo=1
+  "SELECT id, nome, nivel, trabalha_semana, trabalha_sabado, trabalha_domingo_manha, trabalha_domingo_noite FROM colaboradores WHERE ativo=1
    ORDER BY FIELD(nivel,'lider','pleno','junior'), nome"
 )->fetchAll();
 
@@ -51,7 +51,14 @@ foreach ($eventos as $ev) {
     $eid = (int)$ev['id'];
     $indisponiveisDoEvento = $indisp[$eid] ?? [];
     $diaSem = (int)date('w', strtotime($ev['data_evento']));
-    $campoDia = $diaSem === 0 ? 'trabalha_domingo' : ($diaSem === 6 ? 'trabalha_sabado' : 'trabalha_semana');
+    if ($diaSem === 0) {
+        $hora = (int)substr($ev['horario_chegada'] ?? '17:00', 0, 2);
+        $campoDia = $hora < 12 ? 'trabalha_domingo_manha' : 'trabalha_domingo_noite';
+    } elseif ($diaSem === 6) {
+        $campoDia = 'trabalha_sabado';
+    } else {
+        $campoDia = 'trabalha_semana';
+    }
     $disponiveis = [];
     $porNivel = ['lider'=>0,'pleno'=>0,'junior'=>0];
     foreach ($colabs as $c) {

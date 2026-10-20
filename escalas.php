@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/includes/functions.php';
 require_once __DIR__ . '/includes/escala_engine.php';
 exigirLogin();
 $pdo = db();
@@ -35,13 +36,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ehAdmin()) {
     if ($op === 'gerar_mes') {
         $res = gerarMesSeguinteManual($pdo);
         if ($res === null) {
-            flash('A escala do mês seguinte já havia sido gerada.', 'erro');
+            flash('A escala do mês seguinte já havia sido gerada. Use "Regerar mês seguinte" para refazer.', 'erro');
         } else {
             $msg = "Escala do mês seguinte gerada: {$res['completas']} completo(s)";
             if ($res['parciais'] > 0) $msg .= ", {$res['parciais']} parcial(is) para ajuste";
             $msg .= '.';
             flash($msg, $res['parciais'] ? 'erro' : 'sucesso');
         }
+        redirect("escalas.php?mes=$telaMes&ano=$telaAno");
+    }
+
+    if ($op === 'regerar_mes_seguinte') {
+        if (!ehAdmin()) {
+            flash('Apenas administrador.', 'erro');
+        } else {
+            $prox = (new DateTime('first day of next month'));
+            $pm = (int)$prox->format('n');
+            $pa = (int)$prox->format('Y');
+            $res = regerarEscalaDoMes($pdo, $pm, $pa);
+            $msg = "Mês seguinte regerado ({$pm}/{$pa}): {$res['completas']} completo(s)";
+            if ($res['parciais'] > 0) $msg .= ", {$res['parciais']} parcial(is) para ajuste";
+            $msg .= '.';
+            flash($msg, $res['parciais'] ? 'erro' : 'sucesso');
+        }
+        redirect("escalas.php?mes=$telaMes&ano=$telaAno");
     }
 
     if ($op === 'zerar_mes') {
@@ -190,22 +208,42 @@ require __DIR__ . '/includes/header.php';
 
 <div id="card-ferramentas" class="card card-recolhivel">
   <h2>Ferramentas automáticas</h2>
-   <form method="post" onsubmit="return confirm('Gerar a escala do mês seguinte agora, respeitando as indisponibilidades já marcadas?')">
-     <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
-     <input type="hidden" name="op" value="gerar_mes">
-     <label>Gerar a escala do mês seguinte (antecipar antes do dia 22)</label>
-     <button class="btn">📅 Gerar mês seguinte</button>
-     <p class="muted" style="margin-top:.4rem">Respeita as indisponibilidades marcadas até agora. Após gerar, o mês não é gerado novamente de forma automática.</p>
-   </form>
+  <?php
+    $proxM = (new DateTime('first day of next month'));
+    $pmSel = (int)$proxM->format('n');
+    $paSel = (int)$proxM->format('Y');
+    $jaGeradoProx = escalaMensalJaGerada($pdo, $pmSel, $paSel);
+  ?>
+  <?php if (!$jaGeradoProx): ?>
+  <form method="post" onsubmit="return confirm('Gerar a escala do mês seguinte agora, respeitando as indisponibilidades já marcadas?')">
+    <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
+    <input type="hidden" name="op" value="gerar_mes">
+    <input type="hidden" name="mes" value="<?= $mes ?>">
+    <input type="hidden" name="ano" value="<?= $ano ?>">
+    <label>Gerar a escala do mês seguinte (<?= $pmSel ?>/<?= $paSel ?>) — antecipar antes do dia 22</label>
+    <button class="btn">📅 Gerar mês seguinte</button>
+    <p class="muted" style="margin-top:.4rem">Respeita as indisponibilidades marcadas até agora. Após gerar, o mês não é gerado novamente de forma automática.</p>
+  </form>
+  <?php else: ?>
+  <form method="post" onsubmit="return confirm('Regerar a escala do mês seguinte (<?= $pmSel ?>/<?= $paSel ?>)? Isso refaz a geração, mas NÃO sobrescreve eventos com ajustes manuais (ordenação/reorganização).')">
+    <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
+    <input type="hidden" name="op" value="regerar_mes_seguinte">
+    <input type="hidden" name="mes" value="<?= $mes ?>">
+    <input type="hidden" name="ano" value="<?= $ano ?>">
+    <label>Regerar a escala do mês seguinte (<?= $pmSel ?>/<?= $paSel ?>)</label>
+    <button class="btn">🔁 Regerar mês seguinte</button>
+    <p class="muted" style="margin-top:.4rem">A escala do mês seguinte já foi gerada. Permite refazer respeitando ajustes manuais.</p>
+  </form>
+  <?php endif; ?>
 
-   <form method="post" style="margin-top:.8rem" onsubmit="return confirm('Zerar escala do mês? Isso remove TODOS os colaboradores escalados de <?= $meses[$mes] ?> / <?= $ano ?> e define todos os eventos como ABERTOS.')">
-     <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
-     <input type="hidden" name="op" value="zerar_mes">
-     <input type="hidden" name="mes" value="<?= $mes ?>">
-     <input type="hidden" name="ano" value="<?= $ano ?>">
-     <button class="btn danger">🗑️ Zerar escala de <?= $meses[$mes] ?>/<?= $ano ?></button>
-     <p class="muted" style="margin-top:.4rem">Apenas remove os escalados (não exclui eventos).</p>
-   </form>
+  <form method="post" style="margin-top:.8rem" onsubmit="return confirm('Zerar escala do mês? Isso remove TODOS os colaboradores escalados de <?= $meses[$mes] ?> / <?= $ano ?> e define todos os eventos como ABERTOS.')">
+    <input type="hidden" name="csrf" value="<?= tokenCSRF() ?>">
+    <input type="hidden" name="op" value="zerar_mes">
+    <input type="hidden" name="mes" value="<?= $mes ?>">
+    <input type="hidden" name="ano" value="<?= $ano ?>">
+    <button class="btn danger">🗑️ Zerar escala de <?= $meses[$mes] ?>/<?= $ano ?></button>
+    <p class="muted" style="margin-top:.4rem">Apenas remove os escalados (não exclui eventos).</p>
+  </form>
 </div>
 
 <style>
