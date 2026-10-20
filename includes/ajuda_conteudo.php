@@ -209,7 +209,7 @@ function ajudaConteudo(): array {
                 'Critérios da geração automática (resumido): prefere quem tem MENOS escalas no ANO, depois no MÊS, depois no SEMESTRE, depois MAIS tempo sem escalar (última escala mais antiga), depois ordem padrão do colaborador e nome.',
                 'Domingo: divide entre "Domingo de manhã" (chegada < 12h) e "Domingo à noite" (chegada >= 12h), usando a disponibilidade de cada turno.',
                 'Para eventos com 3 ou + colaboradores exige A1 (líder) + A2 (pleno) + A3 (júnior). Com 1–2 não obriga líder, a menos que "exige líder" esteja marcado no evento.',
-                'Regra de exceção: se ainda houver eventos abertos no mês e não houver ninguém com 0 escalas no mês para o nível/turno, pode escalar alguém com exatamente 1 no mês (nunca >=2), priorizando menos no ano + mais tempo sem escalar.',
+                'Regra: no máximo 1 escala por colaborador no mês. Ajustes para preencher vagas ficam a cargo do administrador manualmente.',
                 'Arraste para reordenar quem aparece primeiro (define o colaborador principal do evento).',
                 'Ajustes manuais substituem a geração automática apenas para os eventos alterados.',
             ],
