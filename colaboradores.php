@@ -14,18 +14,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nivel   = $_POST['nivel'];
     $semana  = isset($_POST['trabalha_semana']) ? 1 : 0;
     $sabado  = isset($_POST['trabalha_sabado']) ? 1 : 0;
-    $domMan  = isset($_POST['trabalha_domingo_manha']) ? 1 : 0;
-    $domNoite= isset($_POST['trabalha_domingo_noite']) ? 1 : 0;
+    $domMan  = isset($_POST['trabalha_domingo_manha']) ? 1 : (isset($_POST['trabalha_domingo']) ? (int)$_POST['trabalha_domingo'] : 0);
+    $domNoite= isset($_POST['trabalha_domingo_noite']) ? 1 : (isset($_POST['trabalha_domingo']) ? (int)$_POST['trabalha_domingo'] : 0);
     $crLogin = trim($_POST['login'] ?? '');
     $crSenha = $_POST['senha'] ?? '';
 
     if ($id) {
-        $pdo->prepare("UPDATE colaboradores SET nome=?,celular=?,nivel=?,trabalha_semana=?,trabalha_sabado=?,trabalha_domingo_manha=?,trabalha_domingo_noite=? WHERE id=?")
-            ->execute([$nome,$cel,$nivel,$semana,$sabado,$domMan,$domNoite,$id]);
+        try {
+            $pdo->prepare("UPDATE colaboradores SET nome=?,celular=?,nivel=?,trabalha_semana=?,trabalha_sabado=?,trabalha_domingo_manha=?,trabalha_domingo_noite=? WHERE id=?")
+                ->execute([$nome,$cel,$nivel,$semana,$sabado,$domMan,$domNoite,$id]);
+        } catch (Exception $e) {
+            // fallback se colunas antigas não existirem
+            $pdo->prepare("UPDATE colaboradores SET nome=?,celular=?,nivel=?,trabalha_semana=?,trabalha_sabado=?,trabalha_domingo=? WHERE id=?")
+                ->execute([$nome,$cel,$nivel,$semana,$sabado,($domMan||$domNoite)?1:0,$id]);
+        }
         flash('Colaborador atualizado.');
     } else {
-        $pdo->prepare("INSERT INTO colaboradores (nome,celular,nivel,trabalha_semana,trabalha_sabado,trabalha_domingo_manha,trabalha_domingo_noite) VALUES (?,?,?,?,?,?,?)")
-            ->execute([$nome,$cel,$nivel,$semana,$sabado,$domMan,$domNoite]);
+        try {
+            $pdo->prepare("INSERT INTO colaboradores (nome,celular,nivel,trabalha_semana,trabalha_sabado,trabalha_domingo_manha,trabalha_domingo_noite) VALUES (?,?,?,?,?,?,?)")
+                ->execute([$nome,$cel,$nivel,$semana,$sabado,$domMan,$domNoite]);
+        } catch (Exception $e) {
+            $pdo->prepare("INSERT INTO colaboradores (nome,celular,nivel,trabalha_semana,trabalha_sabado,trabalha_domingo) VALUES (?,?,?,?,?,?)")
+                ->execute([$nome,$cel,$nivel,$semana,$sabado,($domMan||$domNoite)?1:0]);
+        }
         $cid = $pdo->lastInsertId();
         // cria login de acesso (tipo colaborador) se informado
         if ($crLogin && $crSenha) {
