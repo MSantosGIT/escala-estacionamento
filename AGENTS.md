@@ -41,6 +41,9 @@ alertas e relatório anual.
 - **Bump obrigatório** de `VERSION` em cada alteração publicada (seguir SemVer:
   MAJOR.MINOR.PATCH), antes do `git commit`. Assim basta olhar o login em produção
   para confirmar se o `git pull` aplicou a versão esperada.
+- Se houver commits **após** o último bump, fazer um novo bump antes de publicar:
+  a versão exibida deve sempre refletir o código que está no ar (v1.2.2 corrigiu
+  esse descolamento deixado por commits posteriores ao bump para 1.2.1).
 - Se a versão exibida for `dev`, o arquivo `VERSION` não foi encontrado no deploy.
 
 ## Banco de dados
@@ -56,6 +59,10 @@ alertas e relatório anual.
 0 8 * * *  php /var/www/instituto/public_html/escala/cron_confirmacoes.php      # diário 08:00
 ```
 Log: `/var/log/escala_cron.log`.
+
+Não existe cron semanal de geração de escala: ele foi removido na v1.2.0 junto com as
+ferramentas automáticas. A escala do mês seguinte é gerada automaticamente a partir do
+dia 22, no 1º acesso do administrador (ou manualmente pela tela de Escalas).
 
 ## Convenções
 

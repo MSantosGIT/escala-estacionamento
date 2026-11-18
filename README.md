@@ -120,8 +120,10 @@ instalação e cache leve dos assets (páginas PHP sempre buscam a versão mais 
    mysql -u root -p < database.sql
    ```
 3. Ajuste as credenciais em `config/db.php` se necessário (padrão XAMPP: root sem senha).
-4. Acesse `http://localhost/seed.php?run=1` **uma vez** para criar o admin
-   (`admin` / `admin123`) e dados de exemplo. **Depois apague `seed.php`.**
+4. Crie o administrador inicial direto no banco — o antigo `seed.php` foi removido
+   e não é mais distribuído. Gere o hash com `password_hash('senha', PASSWORD_BCRYPT)`
+   e insira em `usuarios` (`nome`, `login`, `senha`, `tipo='administrador'`).
+   Nunca versionar credenciais: senhas de cada ambiente ficam só na documentação interna.
 5. Dê permissão de escrita à pasta `uploads/`.
 6. Acesse `login.php` e entre.
 
@@ -138,8 +140,11 @@ instalação e cache leve dos assets (páginas PHP sempre buscam a versão mais 
 
 ```
 # lembretes de confirmação (7 dias antes) e alerta de não confirmados (48h antes)
-0 7 * * *  php /caminho/escala_estacionamento/cron_confirmacoes.php
+0 8 * * *  php /caminho/escala_estacionamento/cron_confirmacoes.php
 ```
+
+> Não existe mais cron semanal de geração de escala (removido na v1.2.0). A escala do
+> mês seguinte é gerada automaticamente a partir do dia 22, no 1º acesso do administrador.
 
 ## Uso rápido
 
@@ -166,7 +171,6 @@ trocas / historico_trocas
 busca / buscar_veiculo / cadastro_publico
 enviar_alerta / historico / relatorio_anual
 cron_confirmacoes.php       execução agendada (lembretes)
-seed.php                    dados iniciais (apagar após uso)
 database.sql                schema base
 migration_*.sql             evoluções incrementais do banco
 manifest.json / sw.js       PWA (instalação e cache)

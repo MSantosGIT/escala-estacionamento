@@ -158,6 +158,7 @@ CREATE TABLE geracao_mensal (
 ) ENGINE=InnoDB;
 
 -- ------------------------------------------------------------
---  O usuário administrador padrão (admin / admin123) e os dados
---  de exemplo são criados executando seed.php no navegador.
+--  O administrador inicial deve ser criado diretamente nesta tabela,
+--  com senha em bcrypt (password_hash). O antigo seed.php foi removido
+--  e não é mais distribuído.
 -- ------------------------------------------------------------
