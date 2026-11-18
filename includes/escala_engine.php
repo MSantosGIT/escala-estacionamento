@@ -2,14 +2,14 @@
 // ============================================================
 //  MOTOR DE GERAÇÃO DE ESCALA
 //  Regras:
-//   1. Eventos com 3+ colaboradores exigem: 1 A1, 1+ A2, 1+ A3
-//   2. Eventos com 1 ou 2 colaboradores NÃO escalam A1 (só A2 e A3),
-//      exceto quando o evento marca "exige A1".
-//   3. Limite de 1 evento por colaborador no mês (regra rígida — quem já
+//   1. Sem exigência de nível: preenche as vagas com qualquer colaborador ativo
+//      e disponível (níveis podem repetir ou faltar).
+//   2. Limite de 1 evento por colaborador no mês (regra rígida — quem já
 //      foi escalado no mês some da fila até o próximo mês)
-//   4. Prioriza quem está há mais tempo sem ser escalado
-//   5. Respeita disponibilidade por tipo de dia (dias de semana / sábado / domingo)
-//   6. Grava histórico em escala_colaboradores
+//   3. Prioriza quem tem menos escalas no mês/semestre/ano e, em seguida,
+//      quem está há mais tempo sem ser escalado
+//   4. Respeita disponibilidade por tipo de dia (dias de semana / sábado / domingo)
+//   5. Grava histórico em escala_colaboradores
 // ============================================================
 require_once __DIR__ . '/functions.php';
 
@@ -112,18 +112,17 @@ function escalasNoAno(PDO $pdo, int $ano, ?int $excetoEscalaId = null): array {
  * Filtra por disponibilidade conforme o tipo de dia:
  *   'semana' (seg–sex), 'sabado' ou 'domingo'.
  */
-function candidatos(PDO $pdo, string $nivel, string $tipoDia, array $jaEscalados, array $indisponiveis = []): array {
+function candidatos(PDO $pdo, string $tipoDia, array $jaEscalados, array $indisponiveis = []): array {
     $campos = [
         'semana'  => 'trabalha_semana',
         'sabado'  => 'trabalha_sabado',
         'domingo' => 'trabalha_domingo',
     ];
     $campo = $campos[$tipoDia] ?? 'trabalha_semana';
-    $st = $pdo->prepare(
+    $st = $pdo->query(
         "SELECT id FROM colaboradores
-         WHERE ativo = 1 AND nivel = ? AND $campo = 1"
+         WHERE ativo = 1 AND $campo = 1"
     );
-    $st->execute([$nivel]);
     $ids = array_column($st->fetchAll(), 'id');
     // remove quem já está nesta escala e quem marcou indisponibilidade
     return array_values(array_diff($ids, $jaEscalados, $indisponiveis));
@@ -207,7 +206,6 @@ function ordenarPorPrioridade(
 function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): array {
     $escalaId = (int)$escala['id'];
     $num      = (int)$escala['num_colaboradores'];
-    $exigeL   = (int)$escala['exige_lider'] === 1;
     $diaSem   = (int)date('w', strtotime($escala['data_evento'])); // 0=Dom ... 6=Sáb
     if ($diaSem === 0) {
         $hora = (int)substr($escala['horario_chegada'] ?? '17:00', 0, 2);
@@ -227,9 +225,11 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
     // mapas para desempate determinístico
     $opMap = [];
     $nmMap = [];
-    foreach ($pdo->query("SELECT id, ordem_padrao, nome FROM colaboradores WHERE ativo=1") as $rc) {
+    $nivelMap = [];
+    foreach ($pdo->query("SELECT id, nivel, ordem_padrao, nome FROM colaboradores WHERE ativo=1") as $rc) {
         $opMap[(int)$rc['id']] = ($rc['ordem_padrao'] === null ? null : (int)$rc['ordem_padrao']);
         $nmMap[(int)$rc['id']] = (string)$rc['nome'];
+        $nivelMap[(int)$rc['id']] = (string)$rc['nivel'];
     }
 
     // quem já tem 1+ evento no mês fica de fora desta rodada
@@ -241,61 +241,15 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
     $indispon = array_map('intval', array_column($stInd->fetchAll(), 'colaborador_id'));
 
     $selecionados = [];   // colaborador_id => nivel
-    $jaUsados     = $jaNoMes;
     $faltas       = [];
 
-    $precisaComposicao = ($num >= 3);
-
-    // ---- 1) Garantir composição mínima para eventos de 3+ ----
-    if ($precisaComposicao || $exigeL) {
-        $lid = ordenarPorPrioridade(candidatos($pdo, 'lider', $tipoDia, $jaUsados, $indispon), $ultima, $noMes, $noSem, $noAno, $opMap, $nmMap);
-        if (empty($lid)) {
-            if (!$parcial) return ['ok' => false, 'msg' => 'Sem A1 disponível para ' . $escala['evento'] . ' em ' . $escala['data_evento']];
-            $faltas[] = 'A1';
-        } else {
-            $selecionados[$lid[0]] = 'lider';
-            $jaUsados[] = $lid[0];
-        }
-    }
-
-    if ($precisaComposicao) {
-        $ple = ordenarPorPrioridade(candidatos($pdo, 'pleno', $tipoDia, $jaUsados, $indispon), $ultima, $noMes, $noSem, $noAno, $opMap, $nmMap);
-        if (empty($ple)) {
-            if (!$parcial) return ['ok' => false, 'msg' => 'Sem A2 disponível para ' . $escala['evento'] . ' em ' . $escala['data_evento']];
-            $faltas[] = 'A2';
-        } else {
-            $selecionados[$ple[0]] = 'pleno';
-            $jaUsados[] = $ple[0];
-        }
-
-        $jun = ordenarPorPrioridade(candidatos($pdo, 'junior', $tipoDia, $jaUsados, $indispon), $ultima, $noMes, $noSem, $noAno, $opMap, $nmMap);
-        if (empty($jun)) {
-            if (!$parcial) return ['ok' => false, 'msg' => 'Sem A3 disponível para ' . $escala['evento'] . ' em ' . $escala['data_evento']];
-            $faltas[] = 'A3';
-        } else {
-            $selecionados[$jun[0]] = 'junior';
-            $jaUsados[] = $jun[0];
-        }
-    }
-
-    // ---- 2) Completar vagas restantes pela prioridade geral ----
-    // Regra: em eventos de 1 ou 2 colaboradores que NÃO exigem A1,
-    // o nível A1 (lider) não deve ser escalado — só A2 e A3.
-    $a1Permitido = $precisaComposicao || $exigeL;
-    $niveisPool = $a1Permitido ? ['junior', 'pleno', 'lider'] : ['junior', 'pleno'];
-
-    while (count($selecionados) < $num) {
-        $pool = [];
-        foreach ($niveisPool as $nv) {
-            foreach (candidatos($pdo, $nv, $tipoDia, $jaUsados, $indispon) as $cid) {
-                $pool[$cid] = $nv;
-            }
-        }
-        if (empty($pool)) break;
-        $ord = ordenarPorPrioridade(array_keys($pool), $ultima, $noMes, $noSem, $noAno, $opMap, $nmMap);
+    // ---- Preenchimento por prioridade, sem exigência de composição por nível ----
+    $pool = candidatos($pdo, $tipoDia, $jaNoMes, $indispon);
+    while (count($selecionados) < $num && !empty($pool)) {
+        $ord = ordenarPorPrioridade($pool, $ultima, $noMes, $noSem, $noAno, $opMap, $nmMap);
         $escolhido = $ord[0];
-        $selecionados[$escolhido] = $pool[$escolhido];
-        $jaUsados[] = $escolhido;
+        $selecionados[$escolhido] = $nivelMap[$escolhido] ?? 'junior';
+        $pool = array_values(array_diff($pool, [$escolhido]));
     }
 
     if (count($selecionados) < $num) {
@@ -311,7 +265,7 @@ function gerarEscalaEvento(PDO $pdo, array $escala, bool $parcial = false): arra
     // status final: preenchida se completou, aberta se ficou parcial
     $completa = ($faltas === [] && count($selecionados) >= $num);
 
-    // ---- 3) Persistir (histórico) ----
+    // ---- Persistir (histórico) ----
     $pdo->beginTransaction();
     try {
         $pdo->prepare("DELETE FROM escala_colaboradores WHERE escala_id = ?")->execute([$escalaId]);

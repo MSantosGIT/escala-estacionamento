@@ -66,6 +66,9 @@ dia 22, no 1º acesso do administrador (ou manualmente pela tela de Escalas).
 
 ## Convenções
 
+- **Prévia obrigatória antes de codar:** apresentar entendimento, arquivos/escopo afetados,
+  efeitos esperados, o que fica de fora e versão pretendida; aguardar confirmação explícita
+  antes de editar código. Leitura/diagnóstico não precisam de prévia — a edição, sim.
 - PHP, sem comentários desnecessários; fuso `America/Sao_Paulo` (PHP + MySQL `-03:00`).
 - UTF-8; senhas com `password_hash`/`password_verify`; CSRF em formulários.
 - Credenciais/uso: ver `CONTEXTO_LOCAL.md` (gitignored).

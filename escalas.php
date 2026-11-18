@@ -201,7 +201,7 @@ require __DIR__ . '/includes/header.php';
       <div><label>Evento</label><input name="evento" required></div>
       <div><label>Nº de colaboradores</label><input type="number" name="num_colaboradores" min="1" value="3" required></div>
     </div>
-    <div class="check" style="margin-bottom:1rem"><input type="checkbox" name="exige_lider" id="el" checked><label for="el" style="margin:0">Exige colaborador A1</label></div>
+    <div class="check" style="margin-bottom:1rem"><input type="checkbox" name="exige_lider" id="el" checked><label for="el" style="margin:0">Exige colaborador A1 <small class="muted">(sem efeito na geração)</small></label></div>
     <button class="btn">Criar evento</button>
   </form>
 </div>
@@ -357,7 +357,7 @@ require __DIR__ . '/includes/header.php';
               <label style="display:flex;align-items:center;gap:.5rem;font-weight:500;margin-bottom:.8rem">
                 <input type="checkbox" name="exige_lider" style="width:auto"
                        <?= !empty($es['exige_lider']) ? 'checked' : '' ?>>
-                Exige colaborador principal escalado
+                Exige colaborador principal escalado <small class="muted">(sem efeito na geração)</small>
               </label>
 
               <p class="muted" style="font-size:.85rem;margin-bottom:.8rem">Os colaboradores já escalados neste evento são mantidos.</p>

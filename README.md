@@ -26,9 +26,8 @@ Níveis da equipe exibidos como **A1 (líder), A2 (pleno), A3 (júnior)**.
   suficiente entram como parciais para ajuste manual. Um aviso na tela inicial informa que a
   agenda já está montada.
 - **Ajuste de escala pelo Admin** (`admin_escala.php`): substituir, adicionar ou remover
-  escalados em cada evento. O sistema **avisa** quando o ajuste fere a regra de nível
-  (A1↔A1; A2/A3 entre si) ou usa alguém indisponível, mas permite confirmar. Os envolvidos
-  são notificados a cada ajuste.
+  escalados em cada evento. O sistema **avisa** quando o ajuste usa alguém indisponível,
+  mas permite confirmar. Os envolvidos são notificados a cada ajuste.
 - **Indisponibilidade pelo Admin** (`admin_indisponibilidade.php`): seleciona um colaborador,
   navega pelo calendário do mês e clica nos eventos para marcar indisponibilidade (sem a trava
    do dia 22), podendo regerar o mês depois.
@@ -57,9 +56,9 @@ Níveis da equipe exibidos como **A1 (líder), A2 (pleno), A3 (júnior)**.
 
 ### Trocas de escala
 - Fluxo completo (`trocas.php`): colaborador solicita → convidado aceita/recusa →
-  admin confirma/recusa. Regras de compatibilidade de nível: A1 troca com A1/A2;
-  A2 com A1/A2/A3; A3 com A2/A3. Notificações automáticas em cada etapa e
-  histórico completo com filtro de status (`historico_trocas.php`).
+  admin confirma/recusa. Qualquer colaborador ativo pode ser convidado, sem restrição
+  de nível. Notificações automáticas em cada etapa e histórico completo com filtro de
+  status (`historico_trocas.php`).
 
 ### Comunicação
 - **Notificações no dashboard** para colaboradores específicos ou para o admin.
@@ -95,13 +94,18 @@ Níveis da equipe exibidos como **A1 (líder), A2 (pleno), A3 (júnior)**.
 
 ## Regras de geração implementadas
 
-1. Eventos com **3 colaboradores ou mais** exigem composição mínima:
-   **1 líder + 1 (ou mais) pleno + 1 (ou mais) júnior**.
+1. **Sem exigência de nível**: as vagas são preenchidas por qualquer colaborador ativo e
+   disponível. A1, A2 e A3 podem repetir ou faltar na mesma escala; o nível é apenas
+   informativo (badges/cores).
 2. **Preferência de 1 evento por colaborador no mês** (quem tem menos eventos no mês entra primeiro).
-3. **Prioriza quem está há mais tempo sem ser escalado**.
+3. **Prioridade**: menos escalas no mês → semestre → ano → mais tempo sem escalar →
+   ordem padrão → nome.
 4. Respeita a **disponibilidade** por tipo de dia: semana, sábado e domingo, e as
     **indisponibilidades por evento** marcadas até o dia 21.
 5. **Grava o histórico** de cada escalação por colaborador.
+
+> O campo "Exige colaborador A1" foi mantido no cadastro de eventos por compatibilidade,
+> mas **não influencia mais a geração**.
 
 ## Instalar como app (celular e tablet)
 

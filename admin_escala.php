@@ -345,10 +345,6 @@ const LABEL = {lider:'A1', pleno:'A2', junior:'A3'};
 // cada op: {uid, tipo:'substituir'|'remover'|'adicionar', escala_id, ...campos}
 let pendentes = [];
 
-function compativel(nSai, nEntra){
-  if (nSai === 'lider') return nEntra === 'lider';
-  return nEntra === 'pleno' || nEntra === 'junior';
-}
 function indisponivel(eid, cid){
   return (INDISP[eid]||[]).map(Number).includes(parseInt(cid));
 }
@@ -466,9 +462,7 @@ function salvarTudo(){
   const avisos = [];
   pendentes.forEach(p=>{
     if (p.tipo === 'substituir') {
-      const cs = COLAB[p.sai_id], ce = COLAB[p.entra_id];
-      if (cs && ce && !compativel(cs.nivel, ce.nivel))
-        avisos.push(`${cs.nome} (${LABEL[cs.nivel]}) → ${ce.nome} (${LABEL[ce.nivel]}): níveis diferentes.`);
+      const ce = COLAB[p.entra_id];
       if (indisponivel(p.escala_id, p.entra_id))
         avisos.push(`${ce.nome} marcou indisponibilidade.`);
     }

@@ -113,7 +113,7 @@ function ajudaConteudo(): array {
             'titulo' => '🔁 Trocas de escala',
             'intro'  => 'Precisa faltar num evento em que está escalado? Solicite uma troca com outro colaborador direto pelo sistema.',
             'passos' => [
-                'Escolha o evento em que você está escalado e selecione um colega compatível.',
+                'Escolha o evento em que você está escalado e selecione qualquer colega ativo.',
                 'O colega recebe a solicitação e pode aceitar ou recusar.',
                 'Se aceitar, a troca vai para o administrador aprovar — só depois disso ela é confirmada de fato.',
                 'Acompanhe o status (pendente, aceita, aprovada ou recusada) direto nesta tela.',
@@ -197,18 +197,18 @@ function ajudaConteudo(): array {
             'passos' => [
                 'Toque em "➕ Novo colaborador" para cadastrar, informando nome e celular.',
                 'Use ✏️ para editar um colaborador existente ou 🗑️ para inativar.',
-                'O nível define a ordem de prioridade nas escalas.',
+                'O nível (A1/A2/A3) é apenas informativo: não restringe a geração nem as trocas.',
             ],
         ],
 
         'admin_escala.php' => [
             'titulo' => '🛠️ Ajustar escala (Admin)',
-            'intro'  => 'Gere e ajuste manualmente a escala do mês. A geração segue regras de distribuição por níveis e prioridade.',
+            'intro'  => 'Gere e ajuste manualmente a escala do mês. A geração segue critérios de prioridade e disponibilidade, sem exigência de níveis.',
             'passos' => [
                 'Escolha o mês/ano e toque em "Gerar escala" para a distribuição automática.',
-                'Critérios da geração automática (resumido): prefere quem tem MENOS escalas no ANO, depois no MÊS, depois no SEMESTRE, depois MAIS tempo sem escalar (última escala mais antiga), depois ordem padrão do colaborador e nome.',
+                'Critérios da geração automática (resumido): prefere quem tem MENOS escalas no MÊS, depois no SEMESTRE, depois no ANO, depois MAIS tempo sem escalar (última escala mais antiga), depois ordem padrão do colaborador e nome.',
                 'Domingo: divide entre "Domingo de manhã" (chegada < 12h) e "Domingo à noite" (chegada >= 12h), usando a disponibilidade de cada turno.',
-                'Para eventos com 3 ou + colaboradores exige A1 (líder) + A2 (pleno) + A3 (júnior). Com 1–2 não obriga líder, a menos que "exige líder" esteja marcado no evento.',
+                'Não há exigência de nível: qualquer colaborador disponível pode ocupar qualquer vaga. Níveis podem repetir ou faltar; o campo "exige líder" ficou sem efeito.',
                 'Regra: no máximo 1 escala por colaborador no mês. Ajustes para preencher vagas ficam a cargo do administrador manualmente.',
                 'Arraste para reordenar quem aparece primeiro (define o colaborador principal do evento).',
                 'Ajustes manuais substituem a geração automática apenas para os eventos alterados.',
@@ -234,7 +234,7 @@ function ajudaConteudo(): array {
                 'A lista de nomes dentro do ticket mostra exatamente quem está livre para aquele evento específico.',
                 'O resumo no topo mostra o total de colaboradores ativos em cada nível, para referência.',
             ],
-            'dica' => 'Use esta tela antes de gerar ou ajustar a escala, para saber quantas opções você tem em cada nível.',
+            'dica' => 'Use esta tela antes de gerar ou ajustar a escala; a contagem por nível é apenas informativa.',
         ],
 
         'veiculos.php' => [

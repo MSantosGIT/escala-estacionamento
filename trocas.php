@@ -34,17 +34,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('trocas.php');
         }
 
-        // valida compatibilidade de nível
-        $meuNivel = $pdo->prepare("SELECT nivel FROM colaboradores WHERE id=?");
-        $meuNivel->execute([$meuColabId]); $meuNivel = $meuNivel->fetchColumn();
-        $nivelAlvo = $pdo->prepare("SELECT nivel FROM colaboradores WHERE id=?");
-        $nivelAlvo->execute([$alvoId]); $nivelAlvo = $nivelAlvo->fetchColumn();
-
-        if (!in_array($nivelAlvo, niveisCompativeis($meuNivel), true)) {
-            flash('Troca não permitida entre esses níveis.', 'erro');
-            redirect('trocas.php');
-        }
-
         $pdo->prepare(
             "INSERT INTO trocas_escala (solicitante_id, escala_origem_id, alvo_id, escala_alvo_id, status)
              VALUES (?,?,?,?, 'pendente_colaborador')"
@@ -128,11 +117,7 @@ $hoje = date('Y-m-d');
 
 // eventos futuros em que EU estou escalado (origem da troca)
 $meusEventos = [];
-$meuNivel = null;
 if ($meuColabId) {
-    $st = $pdo->prepare("SELECT nivel FROM colaboradores WHERE id=?");
-    $st->execute([$meuColabId]); $meuNivel = $st->fetchColumn();
-
     $st = $pdo->prepare(
         "SELECT es.* FROM escala_colaboradores ec
          JOIN escalas es ON es.id = ec.escala_id
@@ -143,13 +128,12 @@ if ($meuColabId) {
     $meusEventos = $st->fetchAll();
 }
 
-// colaboradores compatíveis por nível (para escolher parceiro)
-$compativeis = [];
-if ($meuNivel) {
-    $in = implode(',', array_fill(0, count(niveisCompativeis($meuNivel)), '?'));
-    $st = $pdo->prepare("SELECT id, nome, nivel FROM colaboradores WHERE ativo=1 AND id<>? AND nivel IN ($in) ORDER BY FIELD(nivel,'lider','pleno','junior'), nome");
-    $st->execute(array_merge([$meuColabId], niveisCompativeis($meuNivel)));
-    $compativeis = $st->fetchAll();
+// todos os outros colaboradores ativos podem ser parceiros de troca
+$colegas = [];
+if ($meuColabId) {
+    $st = $pdo->prepare("SELECT id, nome, nivel FROM colaboradores WHERE ativo=1 AND id<>? ORDER BY nome");
+    $st->execute([$meuColabId]);
+    $colegas = $st->fetchAll();
 }
 
 // trocas que preciso responder (sou o alvo)
@@ -196,7 +180,7 @@ $titulo = 'Trocas de Escala';
 require __DIR__ . '/includes/header.php';
 ?>
 <h1 class="page-title">Trocas de escala</h1>
-<p class="page-sub">Solicite trocas com colegas do mesmo grupo de nível.</p>
+<p class="page-sub">Solicite trocas com qualquer colega ativo, sem restrição de nível.</p>
 
 <?php /* ---------- Trocas para EU responder ---------- */ ?>
 <?php foreach ($pendentesParaMim as $tr):
@@ -286,10 +270,10 @@ require __DIR__ . '/includes/header.php';
         </select>
       </div>
       <div>
-        <label>Trocar com (mesmo grupo de nível)</label>
+        <label>Trocar com (qualquer colaborador ativo)</label>
         <select name="alvo_id" id="alvo" required onchange="carregarEventosAlvo()">
           <option value="">Selecione…</option>
-          <?php foreach ($compativeis as $c): ?>
+          <?php foreach ($colegas as $c): ?>
             <option value="<?= $c['id'] ?>"><?= e($c['nome']) ?> · <?= e(nivelLabel($c['nivel'])) ?></option>
           <?php endforeach; ?>
         </select>
@@ -346,8 +330,8 @@ require __DIR__ . '/includes/header.php';
 const eventosPorColab = <?php
     // monta mapa colaborador_id => [{id, label}]
     $mapa = [];
-    if ($compativeis) {
-        $ids = implode(',', array_column($compativeis,'id'));
+    if ($colegas) {
+        $ids = implode(',', array_column($colegas,'id'));
         $q = $pdo->query(
           "SELECT ec.colaborador_id, es.id, es.evento, es.data_evento, es.horario_chegada
            FROM escala_colaboradores ec JOIN escalas es ON es.id=ec.escala_id
